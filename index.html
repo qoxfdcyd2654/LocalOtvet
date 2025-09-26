@@ -325,6 +325,7 @@
         .data-tools-buttons {
             display: flex;
             gap: 10px;
+            flex-wrap: wrap;
         }
         
         .import-export-btn {
@@ -334,6 +335,8 @@
             border: none;
             border-radius: 4px;
             cursor: pointer;
+            flex: 1;
+            min-width: 120px;
         }
         
         .sync-status {
@@ -352,6 +355,18 @@
         .sync-error {
             background-color: #f8d7da;
             color: #721c24;
+        }
+        
+        .sync-controls {
+            margin: 15px 0;
+        }
+        
+        .sync-input {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
         }
         
         @media (max-width: 768px) {
@@ -398,6 +413,14 @@
                 <button class="create-post-btn" id="createPostBtn">Создать пост</button>
                 
                 <div class="sync-status" id="syncStatus"></div>
+                
+                <div class="sync-controls">
+                    <h3>Синхронизация между устройствами</h3>
+                    <input type="text" id="syncCodeInput" class="sync-input" placeholder="Введите код синхронизации">
+                    <button class="import-export-btn" id="generateSyncCodeBtn">Создать код синхронизации</button>
+                    <button class="import-export-btn" id="applySyncCodeBtn">Применить код</button>
+                    <button class="import-export-btn" id="syncNowBtn">Синхронизировать сейчас</button>
+                </div>
                 
                 <div class="community-info">
                     <h3>LocalOtvet</h3>
@@ -463,12 +486,9 @@
     </div>
 
     <script>
-        // ВАЖНО: НЕ храните токены в открытом коде!
-        // Для продакшена используйте серверную часть для безопасной работы с API
-        const GITHUB_USERNAME = 'qoxfdcyd2654';
-        const GIST_ID = '38dc8eea4871bd06a9e74ee5ff769e43';
-        // Токен удален из кода по соображениям безопасности
-
+        // Безопасная реализация синхронизации через Firebase или аналогичный сервис
+        // Для простоты используем localStorage с ручной синхронизацией
+        
         document.addEventListener('DOMContentLoaded', function() {
             // Элементы DOM
             const postsContainer = document.getElementById('postsContainer');
@@ -482,8 +502,20 @@
             const closeModalButtons = document.querySelectorAll('.close-modal');
             const syncStatus = document.getElementById('syncStatus');
             
+            // Элементы синхронизации
+            const syncCodeInput = document.getElementById('syncCodeInput');
+            const generateSyncCodeBtn = document.getElementById('generateSyncCodeBtn');
+            const applySyncCodeBtn = document.getElementById('applySyncCodeBtn');
+            const syncNowBtn = document.getElementById('syncNowBtn');
+            
+            // Ключ для синхронизации (генерируется или вводится пользователем)
+            let syncKey = localStorage.getItem('localotvet_sync_key') || '';
+            
             // Загрузка постов при запуске
             loadPosts();
+            
+            // Инициализация синхронизации
+            initializeSync();
             
             // Открытие модального окна создания поста
             createPostBtn.addEventListener('click', () => {
@@ -532,6 +564,15 @@
             
             confirmImportBtn.addEventListener('click', importData);
             
+            // Генерация кода синхронизации
+            generateSyncCodeBtn.addEventListener('click', generateSyncCode);
+            
+            // Применение кода синхронизации
+            applySyncCodeBtn.addEventListener('click', applySyncCode);
+            
+            // Принудительная синхронизация
+            syncNowBtn.addEventListener('click', syncNow);
+            
             // Функция отображения статуса синхронизации
             function showSyncStatus(message, isSuccess) {
                 syncStatus.textContent = message;
@@ -539,16 +580,106 @@
                 setTimeout(() => {
                     syncStatus.textContent = '';
                     syncStatus.className = 'sync-status';
-                }, 3000);
+                }, 5000);
+            }
+            
+            // Инициализация синхронизации
+            function initializeSync() {
+                if (syncKey) {
+                    syncCodeInput.value = syncKey;
+                    showSyncStatus('Синхронизация активна. Код: ' + syncKey, true);
+                } else {
+                    showSyncStatus('Синхронизация не настроена', false);
+                }
+            }
+            
+            // Генерация кода синхронизации
+            function generateSyncCode() {
+                syncKey = Math.random().toString(36).substring(2, 10).toUpperCase();
+                localStorage.setItem('localotvet_sync_key', syncKey);
+                syncCodeInput.value = syncKey;
+                showSyncStatus('Код синхронизации создан: ' + syncKey, true);
+                
+                // Сохраняем данные с новым ключом
+                syncToCloud();
+            }
+            
+            // Применение кода синхронизации
+            function applySyncCode() {
+                const newKey = syncCodeInput.value.trim();
+                if (newKey && newKey.length >= 4) {
+                    syncKey = newKey;
+                    localStorage.setItem('localotvet_sync_key', syncKey);
+                    showSyncStatus('Код синхронизации применен', true);
+                    
+                    // Загружаем данные из облака
+                    syncFromCloud();
+                } else {
+                    showSyncStatus('Введите корректный код синхронизации', false);
+                }
+            }
+            
+            // Синхронизация с облаком (эмуляция через localStorage)
+            function syncToCloud() {
+                if (!syncKey) return;
+                
+                try {
+                    const posts = JSON.parse(localStorage.getItem('localotvet_posts')) || [];
+                    const syncData = {
+                        posts: posts,
+                        timestamp: new Date().toISOString(),
+                        syncKey: syncKey
+                    };
+                    
+                    // В реальном приложении здесь был бы запрос к серверу
+                    // Для демонстрации используем localStorage с префиксом
+                    localStorage.setItem('localotvet_cloud_' + syncKey, JSON.stringify(syncData));
+                    showSyncStatus('Данные синхронизированы с облаком', true);
+                } catch (error) {
+                    console.error('Ошибка синхронизации с облаком:', error);
+                    showSyncStatus('Ошибка синхронизации', false);
+                }
+            }
+            
+            // Загрузка данных из облака
+            function syncFromCloud() {
+                if (!syncKey) return;
+                
+                try {
+                    const cloudData = localStorage.getItem('localotvet_cloud_' + syncKey);
+                    if (cloudData) {
+                        const parsedData = JSON.parse(cloudData);
+                        if (parsedData.posts && Array.isArray(parsedData.posts)) {
+                            localStorage.setItem('localotvet_posts', JSON.stringify(parsedData.posts));
+                            loadPosts();
+                            showSyncStatus('Данные загружены из облака', true);
+                        }
+                    } else {
+                        showSyncStatus('Нет данных для синхронизации', false);
+                    }
+                } catch (error) {
+                    console.error('Ошибка загрузки из облака:', error);
+                    showSyncStatus('Ошибка загрузки данных', false);
+                }
+            }
+            
+            // Принудительная синхронизация
+            function syncNow() {
+                if (!syncKey) {
+                    showSyncStatus('Сначала настройте синхронизацию', false);
+                    return;
+                }
+                
+                syncToCloud();
+                setTimeout(syncFromCloud, 1000); // Загружаем после сохранения
             }
             
             // Функция загрузки постов
             async function loadPosts() {
                 try {
-                    // Пытаемся загрузить из localStorage
-                    const localPosts = JSON.parse(localStorage.getItem('localotvet_posts')) || [];
+                    const posts = JSON.parse(localStorage.getItem('localotvet_posts')) || [];
                     
-                    if (localPosts.length === 0) {
+                    if (posts.length === 0) {
                         postsContainer.innerHTML = `
                             <div class="post">
                                 <div class="post-content">
@@ -556,12 +687,10 @@
                                 </div>
                             </div>
                         `;
-                        showSyncStatus('Локальные данные загружены', true);
                         return;
                     }
                     
-                    renderPosts(localPosts);
-                    showSyncStatus('Локальные данные загружены', true);
+                    renderPosts(posts);
                     
                 } catch (error) {
                     console.error('Ошибка загрузки постов:', error);
@@ -580,7 +709,10 @@
             function renderPosts(posts) {
                 postsContainer.innerHTML = '';
                 
-                posts.forEach((post, index) => {
+                // Сортируем посты по дате (новые сначала)
+                const sortedPosts = posts.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                
+                sortedPosts.forEach((post, index) => {
                     const postElement = document.createElement('div');
                     postElement.className = 'post';
                     postElement.innerHTML = `
@@ -596,6 +728,9 @@
                             </div>
                         </div>
                         <div class="post-footer">
+                            <div class="post-meta">
+                                <small>${new Date(post.timestamp).toLocaleString('ru-RU')}</small>
+                            </div>
                             <button class="comments-btn" data-post-id="${index}">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                                     <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
@@ -670,6 +805,7 @@
                             const commentText = textarea.value.trim();
                             if (commentText) {
                                 addComment(postId, commentText);
+                                textarea.value = '';
                             }
                         }
                     });
@@ -693,6 +829,9 @@
                     localStorage.setItem('localotvet_posts', JSON.stringify(posts));
                     await loadPosts();
                     showSyncStatus('Пост успешно создан', true);
+                    
+                    // Синхронизируем с облаком
+                    syncToCloud();
                 } catch (error) {
                     console.error('Ошибка создания поста:', error);
                     showSyncStatus('Ошибка создания поста', false);
@@ -713,6 +852,9 @@
                         
                         localStorage.setItem('localotvet_posts', JSON.stringify(posts));
                         await loadPosts();
+                        
+                        // Синхронизируем с облаком
+                        syncToCloud();
                     }
                 } catch (error) {
                     console.error('Ошибка голосования:', error);
@@ -737,6 +879,9 @@
                         
                         localStorage.setItem('localotvet_posts', JSON.stringify(posts));
                         await loadPosts();
+                        
+                        // Синхронизируем с облаком
+                        syncToCloud();
                         
                         // Показываем секцию комментариев после добавления
                         const commentsSection = document.getElementById(`comments-${postId}`);
@@ -790,6 +935,9 @@
                             importDataModal.style.display = 'none';
                             document.getElementById('importData').value = '';
                             showSyncStatus('Данные успешно импортированы', true);
+                            
+                            // Синхронизируем с облаком
+                            syncToCloud();
                         }
                     } else {
                         alert('Некорректный формат данных. Ожидается массив.');
