@@ -335,6 +335,24 @@
             cursor: pointer;
         }
         
+        .sync-status {
+            margin-top: 10px;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            text-align: center;
+        }
+        
+        .sync-success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .sync-error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        
         @media (max-width: 768px) {
             .main-content {
                 flex-direction: column;
@@ -377,6 +395,8 @@
             
             <div class="sidebar">
                 <button class="create-post-btn" id="createPostBtn">Создать пост</button>
+                
+                <div class="sync-status" id="syncStatus"></div>
                 
                 <div class="community-info">
                     <h3>LocalOtvet</h3>
@@ -442,6 +462,11 @@
     </div>
 
     <script>
+        // Конфигурация GitHub
+        const GITHUB_USERNAME = 'qoxfdcyd2654';
+        const GIST_ID = '38dc8eea4871bd06a9e74ee5ff769e43';
+        const GITHUB_TOKEN = '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';
+
         document.addEventListener('DOMContentLoaded', function() {
             // Элементы DOM
             const postsContainer = document.getElementById('postsContainer');
@@ -453,6 +478,7 @@
             const importDataModal = document.getElementById('importDataModal');
             const confirmImportBtn = document.getElementById('confirmImportBtn');
             const closeModalButtons = document.querySelectorAll('.close-modal');
+            const syncStatus = document.getElementById('syncStatus');
             
             // Загрузка постов при запуске
             loadPosts();
@@ -471,14 +497,14 @@
             });
             
             // Обработка создания поста
-            createPostForm.addEventListener('submit', function(e) {
+            createPostForm.addEventListener('submit', async function(e) {
                 e.preventDefault();
                 
                 const title = document.getElementById('postTitle').value;
                 const content = document.getElementById('postContent').value;
                 
                 if (title && content) {
-                    createPost(title, content);
+                    await createPost(title, content);
                     createPostForm.reset();
                     createPostModal.style.display = 'none';
                 }
@@ -494,9 +520,72 @@
             
             confirmImportBtn.addEventListener('click', importData);
             
+            // Функция отображения статуса синхронизации
+            function showSyncStatus(message, isSuccess) {
+                syncStatus.textContent = message;
+                syncStatus.className = 'sync-status ' + (isSuccess ? 'sync-success' : 'sync-error');
+                setTimeout(() => {
+                    syncStatus.textContent = '';
+                    syncStatus.className = 'sync-status';
+                }, 3000);
+            }
+            
+            // Функция загрузки постов из Gist
+            async function loadPostsFromGist() {
+                try {
+                    const response = await fetch(`https://api.github.com/gists/${GIST_ID}`);
+                    if (!response.ok) throw new Error('Ошибка загрузки');
+                    
+                    const gistData = await response.json();
+                    const posts = JSON.parse(gistData.files['posts.json'].content);
+                    showSyncStatus('Данные загружены из облака', true);
+                    return posts;
+                } catch (error) {
+                    console.log('Ошибка загрузки из Gist, используем локальные данные:', error);
+                    const localPosts = JSON.parse(localStorage.getItem('localotvet_posts')) || [];
+                    if (localPosts.length > 0) {
+                        showSyncStatus('Используются локальные данные', false);
+                    }
+                    return localPosts;
+                }
+            }
+            
+            // Функция сохранения постов в Gist
+            async function savePostsToGist(posts) {
+                try {
+                    const response = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
+                        method: 'PATCH',
+                        headers: {
+                            'Authorization': `token ${GITHUB_TOKEN}`,
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/vnd.github.v3+json'
+                        },
+                        body: JSON.stringify({
+                            description: 'LocalOtvet Posts Data',
+                            files: {
+                                'posts.json': {
+                                    content: JSON.stringify(posts, null, 2)
+                                }
+                            }
+                        })
+                    });
+                    
+                    if (!response.ok) throw new Error('Ошибка сохранения');
+                    
+                    const result = await response.json();
+                    showSyncStatus('Данные сохранены в облако', true);
+                    return result;
+                } catch (error) {
+                    console.log('Ошибка сохранения в Gist, сохраняем локально:', error);
+                    localStorage.setItem('localotvet_posts', JSON.stringify(posts));
+                    showSyncStatus('Ошибка синхронизации, данные сохранены локально', false);
+                    throw error;
+                }
+            }
+            
             // Функция загрузки постов
-            function loadPosts() {
-                const posts = JSON.parse(localStorage.getItem('localotvet_posts')) || [];
+            async function loadPosts() {
+                const posts = await loadPostsFromGist();
                 
                 if (posts.length === 0) {
                     postsContainer.innerHTML = `
@@ -588,8 +677,8 @@
             }
             
             // Функция создания поста
-            function createPost(title, content) {
-                const posts = JSON.parse(localStorage.getItem('localotvet_posts')) || [];
+            async function createPost(title, content) {
+                const posts = await loadPostsFromGist();
                 
                 const newPost = {
                     title,
@@ -600,14 +689,13 @@
                 };
                 
                 posts.unshift(newPost);
-                localStorage.setItem('localotvet_posts', JSON.stringify(posts));
-                
-                loadPosts();
+                await savePostsToGist(posts);
+                await loadPosts();
             }
             
             // Функция голосования за пост
-            function votePost(postId, isUpvote) {
-                const posts = JSON.parse(localStorage.getItem('localotvet_posts')) || [];
+            async function votePost(postId, isUpvote) {
+                const posts = await loadPostsFromGist();
                 
                 if (posts[postId]) {
                     if (isUpvote) {
@@ -616,14 +704,14 @@
                         posts[postId].votes = (posts[postId].votes || 0) - 1;
                     }
                     
-                    localStorage.setItem('localotvet_posts', JSON.stringify(posts));
-                    loadPosts();
+                    await savePostsToGist(posts);
+                    await loadPosts();
                 }
             }
             
             // Функция добавления комментария
-            function addComment(postId, text) {
-                const posts = JSON.parse(localStorage.getItem('localotvet_posts')) || [];
+            async function addComment(postId, text) {
+                const posts = await loadPostsFromGist();
                 
                 if (posts[postId]) {
                     if (!posts[postId].comments) {
@@ -635,8 +723,8 @@
                         timestamp: new Date().toISOString()
                     });
                     
-                    localStorage.setItem('localotvet_posts', JSON.stringify(posts));
-                    loadPosts();
+                    await savePostsToGist(posts);
+                    await loadPosts();
                     
                     // Показываем секцию комментариев после добавления
                     const commentsSection = document.getElementById(`comments-${postId}`);
@@ -645,8 +733,8 @@
             }
             
             // Функция экспорта данных
-            function exportData() {
-                const posts = JSON.parse(localStorage.getItem('localotvet_posts')) || [];
+            async function exportData() {
+                const posts = await loadPostsFromGist();
                 const dataStr = JSON.stringify(posts, null, 2);
                 const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
                 
@@ -659,7 +747,7 @@
             }
             
             // Функция импорта данных
-            function importData() {
+            async function importData() {
                 const importDataText = document.getElementById('importData').value;
                 
                 if (!importDataText) {
@@ -672,8 +760,8 @@
                     
                     if (Array.isArray(importedData)) {
                         if (confirm('Это заменит все текущие данные. Продолжить?')) {
-                            localStorage.setItem('localotvet_posts', JSON.stringify(importedData));
-                            loadPosts();
+                            await savePostsToGist(importedData);
+                            await loadPosts();
                             importDataModal.style.display = 'none';
                             alert('Данные успешно импортированы!');
                         }
