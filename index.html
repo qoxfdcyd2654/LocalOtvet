@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
@@ -828,10 +827,10 @@
         <div class="ban-message">
             <div class="ban-icon">🚫</div>
             <h2>Доступ ограничен</h2>
-            <p>Ваш IP-адрес был заблокирован администратором.</p>
+            <p>Ваш аккаунт был заблокирован за нарушение правил сообщества.</p>
             <p>Если вы считаете, что это произошло по ошибке, свяжитесь с администрацией сайта.</p>
             <div style="margin-top: 20px; font-size: 12px; opacity: 0.7;">
-                IP: <span id="bannedIPDisplay"></span>
+                Причина: <span id="banReasonDisplay"></span>
             </div>
         </div>
     </div>
@@ -882,8 +881,8 @@
                         <button class="owner-btn" id="nukeDataBtn">Очистить все посты</button>
                         <button class="owner-btn" id="viewBannedUsersBtn">Просмотр забаненных</button>
                         <button class="owner-btn" id="viewLocalPostsBtn">Просмотр локальных постов</button>
-                        <button class="owner-btn" id="viewIPBansBtn">Управление IP-банами</button>
-                        <button class="owner-btn" id="cleanDuplicateBansBtn">Очистить дубликаты банов</button>
+                        <button class="owner-btn" id="viewSmartBansBtn">Умные баны</button>
+                        <button class="owner-btn" id="cleanDuplicateBansBtn">Очистить дубликаты</button>
                         <button class="owner-btn" id="logoutOwnerBtn">Выйти из режима владельца</button>
                     </div>
                     
@@ -1160,28 +1159,25 @@
         </div>
     </div>
 
-    <!-- Новое модальное окно для управления IP-банами -->
-    <div class="modal" id="ipBanModal">
+    <!-- Модальное окно для умных банов -->
+    <div class="modal" id="smartBansModal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>Управление IP-банами</h2>
+                <h2>Умная система банов</h2>
                 <button class="close-modal">&times;</button>
             </div>
             <div class="form-group">
-                <label>Добавить IP в черный список:</label>
-                <input type="text" id="ipToBan" class="form-control" placeholder="Введите IP-адрес">
-                <small style="color: var(--gray-color);">Например: 192.168.1.1</small>
-            </div>
-            <button class="submit-comment-btn" id="addIPBanBtn">Забанить IP</button>
-            
-            <div style="margin-top: 20px;">
-                <h3>Забаненные IP-адреса:</h3>
-                <div id="bannedIPsList" style="max-height: 300px; overflow-y: auto; margin-top: 10px;">
-                    <!-- Список IP будет здесь -->
+                <p>Система отслеживает пользователей по цифровым отпечаткам, а не IP.</p>
+                
+                <div style="margin-top: 20px;">
+                    <h3>Забаненные отпечатки:</h3>
+                    <div id="bannedFingerprintsList" style="max-height: 300px; overflow-y: auto; margin-top: 10px;">
+                        <!-- Список будет здесь -->
+                    </div>
                 </div>
             </div>
             <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
-                <button class="submit-comment-btn" style="background-color: var(--gray-color);" id="closeIPBanModalBtn">Закрыть</button>
+                <button class="submit-comment-btn" style="background-color: var(--gray-color);" id="closeSmartBansModalBtn">Закрыть</button>
             </div>
         </div>
     </div>
@@ -1243,46 +1239,182 @@
             }
         }
 
-        // Класс для управления IP-банами
-        class IPBanManager {
+        // 🚫 УМНАЯ СИСТЕМА БАНА (НЕ ЗАВИСИТ ОТ IP)
+        class SmartBanManager {
             constructor() {
-                this.storageKey = 'localotvet_banned_ips';
+                this.storageKey = 'localotvet_smart_bans';
+                this.fingerprintKey = 'localotvet_user_fingerprint';
             }
 
-            // Получить все забаненные IP
-            getBannedIPs() {
-                const ipsJson = localStorage.getItem(this.storageKey);
-                return ipsJson ? JSON.parse(ipsJson) : [];
+            // Генерация цифрового отпечатка пользователя
+            async generateUserFingerprint() {
+                try {
+                    const components = [];
+                    
+                    // 1. User Agent
+                    components.push(navigator.userAgent);
+                    
+                    // 2. Screen resolution
+                    components.push(`${screen.width}x${screen.height}`);
+                    
+                    // 3. Timezone
+                    components.push(Intl.DateTimeFormat().resolvedOptions().timeZone);
+                    
+                    // 4. Language
+                    components.push(navigator.language);
+                    
+                    // 5. Canvas fingerprint (очень уникальный)
+                    const canvasFingerprint = await this.getCanvasFingerprint();
+                    components.push(canvasFingerprint);
+                    
+                    // 6. Hardware concurrency
+                    components.push(navigator.hardwareConcurrency || 'unknown');
+                    
+                    // 7. Platform
+                    components.push(navigator.platform);
+                    
+                    // Создаем хеш от всех компонентов
+                    const fingerprintString = components.join('|');
+                    const fingerprintHash = await this.sha256(fingerprintString);
+                    
+                    // Сохраняем в localStorage для последующего использования
+                    localStorage.setItem(this.fingerprintKey, fingerprintHash);
+                    
+                    return fingerprintHash;
+                } catch (error) {
+                    console.error('Ошибка генерации отпечатка:', error);
+                    return 'fallback_fingerprint_' + Math.random().toString(36).substr(2, 9);
+                }
             }
 
-            // Забанить IP
-            banIP(ip) {
-                const bannedIPs = this.getBannedIPs();
-                if (!bannedIPs.includes(ip)) {
-                    bannedIPs.push(ip);
-                    localStorage.setItem(this.storageKey, JSON.stringify(bannedIPs));
+            // Canvas fingerprinting
+            async getCanvasFingerprint() {
+                try {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    
+                    canvas.width = 200;
+                    canvas.height = 50;
+                    
+                    ctx.textBaseline = 'top';
+                    ctx.font = '14px Arial';
+                    ctx.fillStyle = '#f60';
+                    ctx.fillRect(125, 1, 62, 20);
+                    ctx.fillStyle = '#069';
+                    ctx.fillText('LocalOtvet Fingerprint', 2, 15);
+                    ctx.fillStyle = 'rgba(102, 204, 0, 0.7)';
+                    ctx.fillText('LocalOtvet Fingerprint', 4, 17);
+                    
+                    const dataUrl = canvas.toDataURL();
+                    return await this.sha256(dataUrl);
+                } catch (error) {
+                    return 'canvas_error';
+                }
+            }
+
+            // SHA-256 хеширование
+            async sha256(message) {
+                const msgBuffer = new TextEncoder().encode(message);
+                const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+                const hashArray = Array.from(new Uint8Array(hashBuffer));
+                return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            }
+
+            // Получить отпечаток пользователя (генерирует или возвращает существующий)
+            async getUserFingerprint() {
+                let fingerprint = localStorage.getItem(this.fingerprintKey);
+                if (!fingerprint) {
+                    fingerprint = await this.generateUserFingerprint();
+                }
+                return fingerprint;
+            }
+
+            // Забанить по отпечатку
+            banFingerprint(fingerprint, reason = 'Нарушение правил') {
+                const bans = this.getBannedFingerprints();
+                const banInfo = {
+                    fingerprint: fingerprint,
+                    reason: reason,
+                    timestamp: new Date().toISOString(),
+                    bannedBy: 'system'
+                };
+                
+                if (!bans.some(ban => ban.fingerprint === fingerprint)) {
+                    bans.push(banInfo);
+                    localStorage.setItem(this.storageKey, JSON.stringify(bans));
                 }
                 return true;
             }
 
-            // Разбанить IP
-            unbanIP(ip) {
-                const bannedIPs = this.getBannedIPs();
-                const updatedIPs = bannedIPs.filter(bannedIP => bannedIP !== ip);
-                localStorage.setItem(this.storageKey, JSON.stringify(updatedIPs));
+            // Разбанить по отпечатку
+            unbanFingerprint(fingerprint) {
+                const bans = this.getBannedFingerprints();
+                const updatedBans = bans.filter(ban => ban.fingerprint !== fingerprint);
+                localStorage.setItem(this.storageKey, JSON.stringify(updatedBans));
                 return true;
             }
 
-            // Проверить, забанен ли IP
-            isIPBanned(ip) {
-                const bannedIPs = this.getBannedIPs();
-                return bannedIPs.includes(ip);
+            // Проверить бан по отпечатку
+            isFingerprintBanned(fingerprint) {
+                const bans = this.getBannedFingerprints();
+                return bans.some(ban => ban.fingerprint === fingerprint);
             }
 
-            // Очистить все IP-баны
+            // Получить все баны
+            getBannedFingerprints() {
+                const bansJson = localStorage.getItem(this.storageKey);
+                return bansJson ? JSON.parse(bansJson) : [];
+            }
+
+            // Очистить все баны
             clearAllBans() {
                 localStorage.removeItem(this.storageKey);
                 return true;
+            }
+
+            // Автоматический бан при нарушении (объединяет ID пользователя и отпечаток)
+            async autoBanUser(userId, reason = 'Многократные нарушения') {
+                try {
+                    // 1. Бан по ID пользователя (в Supabase)
+                    await jsonBinApp.banUser(userId);
+                    
+                    // 2. Бан по цифровому отпечатку
+                    const fingerprint = await this.getUserFingerprint();
+                    this.banFingerprint(fingerprint, reason);
+                    
+                    // 3. Сохраняем связку userId + fingerprint для отслеживания
+                    this.saveUserFingerprintAssociation(userId, fingerprint);
+                    
+                    return true;
+                } catch (error) {
+                    console.error('Ошибка автоматического бана:', error);
+                    return false;
+                }
+            }
+
+            // Сохранить связку userId + fingerprint
+            saveUserFingerprintAssociation(userId, fingerprint) {
+                const associations = this.getUserAssociations();
+                associations.push({
+                    userId: userId,
+                    fingerprint: fingerprint,
+                    timestamp: new Date().toISOString()
+                });
+                localStorage.setItem('localotvet_user_associations', JSON.stringify(associations));
+            }
+
+            // Получить ассоциации пользователей
+            getUserAssociations() {
+                const associationsJson = localStorage.getItem('localotvet_user_associations');
+                return associationsJson ? JSON.parse(associationsJson) : [];
+            }
+
+            // Найти все userId по отпечатку
+            findUserIdsByFingerprint(fingerprint) {
+                const associations = this.getUserAssociations();
+                return associations
+                    .filter(assoc => assoc.fingerprint === fingerprint)
+                    .map(assoc => assoc.userId);
             }
         }
 
@@ -1353,7 +1485,7 @@
                 this.supabaseUrl = 'https://ncwejzjbgpjdzeiqolks.supabase.co';
                 this.supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5jd2VqempiZ3BqZHplaXFvbGtzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk3NTg0NjgsImV4cCI6MjA3NTMzNDQ2OH0.NaaEVVEyz444wMJcty4mjrsUs4OGHJ3a3Y5d3UTikhs';
                 this.localPostManager = new LocalPostManager();
-                this.ipBanManager = new IPBanManager();
+                this.smartBanManager = new SmartBanManager();
                 
                 // Инициализируем клиент Supabase
                 this.supabase = supabase.createClient(this.supabaseUrl, this.supabaseKey);
@@ -1396,11 +1528,19 @@
             // Добавить пост
             async addPost(title, content, author = 'Аноним', authorId, category = 'other') {
                 try {
-                    // Проверяем на запрещенные слова
+                    // 1. Проверка на бан по отпечатку
+                    const userFingerprint = await this.smartBanManager.getUserFingerprint();
+                    if (this.smartBanManager.isFingerprintBanned(userFingerprint)) {
+                        throw new Error('Ваш аккаунт заблокирован за нарушение правил');
+                    }
+
+                    // 2. Проверка на запрещенные слова
                     const fullText = (title + ' ' + content).toLowerCase();
                     
                     if (this.localPostManager.containsBlacklistedWords(fullText)) {
-                        // Сохраняем локально
+                        // Автоматический бан за попытку публикации запрещенного контента
+                        await this.smartBanManager.autoBanUser(authorId, 'Попытка публикации запрещенного контента');
+                        
                         const localPost = {
                             id: 'local_' + Date.now().toString(),
                             title: title,
@@ -1417,13 +1557,19 @@
                         };
                         
                         this.localPostManager.saveLocalPost(localPost);
-                        throw new Error('BLOCKED_CONTENT: Пост сохранен локально из-за запрещенного содержания');
+                        throw new Error('BLOCKED_CONTENT: Пост сохранен локально. Аккаунт заблокирован за нарушение правил.');
                     }
 
-                    // Проверяем, не забанен ли пользователь
+                    // 3. Проверка обычного бана
                     const isBanned = await this.isUserBanned(authorId);
                     if (isBanned) {
                         throw new Error('Вы забанены и не можете создавать посты');
+                    }
+
+                    // 4. Анти-спам проверка
+                    const canPost = await this.checkSpamProtection(authorId);
+                    if (!canPost.allowed) {
+                        throw new Error(canPost.reason);
                     }
 
                     // Создаем пост в Supabase
@@ -1461,6 +1607,46 @@
                 } catch (error) {
                     console.error('Ошибка добавления поста:', error);
                     throw error;
+                }
+            }
+
+            // СИСТЕМА ЗАЩИТЫ ОТ СПАМА
+            async checkSpamProtection(userId) {
+                try {
+                    // Получаем посты пользователя за последние 24 часа
+                    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+                    
+                    const { data: userPosts, error } = await this.supabase
+                        .from('posts')
+                        .select('created_at')
+                        .eq('author_id', userId)
+                        .gte('created_at', oneDayAgo);
+
+                    if (error) throw error;
+
+                    const postCount = userPosts.length;
+
+                    // Лимиты:
+                    if (postCount >= 20) {
+                        return { allowed: false, reason: 'Превышен лимит постов (20 в день)' };
+                    }
+                    if (postCount >= 10) {
+                        return { allowed: false, reason: 'Превышен лимит постов (10 в день). Подождите 24 часа.' };
+                    }
+                    if (postCount >= 5) {
+                        // Проверяем временной интервал между постами
+                        const lastPostTime = new Date(userPosts[userPosts.length - 1].created_at);
+                        const timeSinceLastPost = Date.now() - lastPostTime.getTime();
+                        
+                        if (timeSinceLastPost < 10 * 60 * 1000) { // 10 минут
+                            return { allowed: false, reason: 'Слишком частые посты. Подождите 10 минут.' };
+                        }
+                    }
+
+                    return { allowed: true };
+                } catch (error) {
+                    console.error('Ошибка проверки спама:', error);
+                    return { allowed: true }; // В случае ошибки разрешаем пост
                 }
             }
 
@@ -1932,32 +2118,24 @@
             }
         }
 
-        // Функция для получения IP пользователя
-        async function getUserIP() {
+        // Функция проверки бана по отпечатку
+        async checkSmartBan() {
             try {
-                const response = await fetch('https://api.ipify.org?format=json');
-                const data = await response.json();
-                return data.ip;
-            } catch (error) {
-                console.error('Ошибка получения IP:', error);
-                return 'unknown';
-            }
-        }
-
-        // Функция проверки IP-бана
-        async function checkIPBan() {
-            try {
-                const userIP = await getUserIP();
-                const isBanned = jsonBinApp.ipBanManager.isIPBanned(userIP);
+                const userFingerprint = await jsonBinApp.smartBanManager.getUserFingerprint();
+                const isBanned = jsonBinApp.smartBanManager.isFingerprintBanned(userFingerprint);
                 
                 if (isBanned) {
+                    const bans = jsonBinApp.smartBanManager.getBannedFingerprints();
+                    const banInfo = bans.find(ban => ban.fingerprint === userFingerprint);
+                    const reason = banInfo ? banInfo.reason : 'Нарушение правил сообщества';
+                    
                     document.getElementById('banPage').style.display = 'flex';
                     document.getElementById('mainApp').style.display = 'none';
-                    document.getElementById('bannedIPDisplay').textContent = userIP;
+                    document.getElementById('banReasonDisplay').textContent = reason;
                     return true;
                 }
             } catch (error) {
-                console.error('Ошибка проверки IP-бана:', error);
+                console.error('Ошибка проверки умного бана:', error);
             }
             
             document.getElementById('banPage').style.display = 'none';
@@ -2006,7 +2184,7 @@
             const logoutOwnerBtn = document.getElementById('logoutOwnerBtn');
             const viewBannedUsersBtn = document.getElementById('viewBannedUsersBtn');
             const viewLocalPostsBtn = document.getElementById('viewLocalPostsBtn');
-            const viewIPBansBtn = document.getElementById('viewIPBansBtn');
+            const viewSmartBansBtn = document.getElementById('viewSmartBansBtn');
             const cleanDuplicateBansBtn = document.getElementById('cleanDuplicateBansBtn');
             const nukeConfirmModal = document.getElementById('nukeConfirmModal');
             const cancelNukeBtn = document.getElementById('cancelNukeBtn');
@@ -2028,12 +2206,10 @@
             const closeLocalPostsBtn = document.getElementById('closeLocalPostsBtn');
             const clearLocalPostsBtn = document.getElementById('clearLocalPostsBtn');
             
-            // Элементы для IP-банов
-            const ipBanModal = document.getElementById('ipBanModal');
-            const ipToBan = document.getElementById('ipToBan');
-            const addIPBanBtn = document.getElementById('addIPBanBtn');
-            const bannedIPsList = document.getElementById('bannedIPsList');
-            const closeIPBanModalBtn = document.getElementById('closeIPBanModalBtn');
+            // Элементы для умных банов
+            const smartBansModal = document.getElementById('smartBansModal');
+            const bannedFingerprintsList = document.getElementById('bannedFingerprintsList');
+            const closeSmartBansModalBtn = document.getElementById('closeSmartBansModalBtn');
             
             // Создаем экземпляры классов
             const jsonBinApp = new SupabaseReddit();
@@ -2050,14 +2226,14 @@
             initializeApp();
             
             async function initializeApp() {
-                // Сначала проверяем IP-бан
-                const isBanned = await checkIPBan();
+                // Сначала проверяем умный бан
+                const isBanned = await checkSmartBan();
                 if (isBanned) {
-                    return; // Не продолжаем инициализацию если IP забанен
+                    return; // Не продолжаем инициализацию если пользователь забанен
                 }
                 
-                // Затем загружаем остальное
-                loadPosts();
+                // Затем загружаем основное приложение
+                await loadPosts();
                 setupNavigation();
                 setupUserEvents();
                 setupDeleteEvents();
@@ -2065,7 +2241,7 @@
                 setupCategories();
                 setupBanEvents();
                 setupLocalPostsEvents();
-                setupIPBanEvents();
+                setupSmartBanEvents();
             }
             
             // Настройка категорий
@@ -2157,45 +2333,20 @@
                 });
             }
             
-            // Настройка событий для IP-банов
-            function setupIPBanEvents() {
-                viewIPBansBtn.addEventListener('click', () => {
-                    displayBannedIPs();
-                    ipBanModal.style.display = 'flex';
+            // Настройка событий для умных банов
+            function setupSmartBanEvents() {
+                viewSmartBansBtn.addEventListener('click', () => {
+                    displaySmartBans();
+                    smartBansModal.style.display = 'flex';
                 });
 
-                addIPBanBtn.addEventListener('click', async () => {
-                    const ip = ipToBan.value.trim();
-                    if (!ip) {
-                        alert('Введите IP-адрес');
-                        return;
-                    }
-
-                    // Простая валидация IP
-                    const ipRegex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
-                    if (!ipRegex.test(ip)) {
-                        alert('Введите корректный IP-адрес');
-                        return;
-                    }
-
-                    try {
-                        await jsonBinApp.ipBanManager.banIP(ip);
-                        ipToBan.value = '';
-                        showSyncStatus('IP забанен', true);
-                        await displayBannedIPs();
-                    } catch (error) {
-                        console.error('Ошибка бана IP:', error);
-                        showSyncStatus('Ошибка бана IP', false);
-                    }
+                closeSmartBansModalBtn.addEventListener('click', () => {
+                    smartBansModal.style.display = 'none';
                 });
 
-                closeIPBanModalBtn.addEventListener('click', () => {
-                    ipBanModal.style.display = 'none';
-                });
-
-                ipBanModal.addEventListener('click', (e) => {
-                    if (e.target === ipBanModal) {
-                        ipBanModal.style.display = 'none';
+                smartBansModal.addEventListener('click', (e) => {
+                    if (e.target === smartBansModal) {
+                        smartBansModal.style.display = 'none';
                     }
                 });
 
@@ -2338,48 +2489,50 @@
                 });
             }
             
-            // Отображение забаненных IP
-            function displayBannedIPs() {
-                const bannedIPs = jsonBinApp.ipBanManager.getBannedIPs();
-                bannedIPsList.innerHTML = '';
+            // Отображение умных банов
+            function displaySmartBans() {
+                const bannedFingerprints = jsonBinApp.smartBanManager.getBannedFingerprints();
+                bannedFingerprintsList.innerHTML = '';
                 
-                if (bannedIPs.length === 0) {
-                    bannedIPsList.innerHTML = '<p>Нет забаненных IP-адресов</p>';
+                if (bannedFingerprints.length === 0) {
+                    bannedFingerprintsList.innerHTML = '<p>Нет забаненных отпечатков</p>';
                     return;
                 }
                 
-                bannedIPs.forEach(ip => {
-                    const ipElement = document.createElement('div');
-                    ipElement.className = 'banned-ip-item';
-                    ipElement.style.padding = '10px';
-                    ipElement.style.borderBottom = '1px solid #eee';
-                    ipElement.style.display = 'flex';
-                    ipElement.style.justifyContent = 'space-between';
-                    ipElement.style.alignItems = 'center';
+                bannedFingerprints.forEach(ban => {
+                    const banElement = document.createElement('div');
+                    banElement.style.padding = '10px';
+                    banElement.style.borderBottom = '1px solid #eee';
+                    banElement.style.display = 'flex';
+                    banElement.style.justifyContent = 'space-between';
+                    banElement.style.alignItems = 'center';
                     
-                    ipElement.innerHTML = `
+                    banElement.innerHTML = `
                         <div>
-                            <strong>${ip}</strong>
+                            <div><strong>Отпечаток:</strong> ${ban.fingerprint.substring(0, 16)}...</div>
+                            <div><strong>Причина:</strong> ${ban.reason}</div>
+                            <div><strong>Время:</strong> ${new Date(ban.timestamp).toLocaleString('ru-RU')}</div>
                         </div>
-                        <button class="unban-ip-btn" data-ip="${ip}" style="background-color: #28a745; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">
+                        <button class="unban-fingerprint-btn" data-fingerprint="${ban.fingerprint}" 
+                                style="background-color: #28a745; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">
                             Разбанить
                         </button>
                     `;
                     
-                    bannedIPsList.appendChild(ipElement);
+                    bannedFingerprintsList.appendChild(banElement);
                 });
                 
-                // Обработчики для кнопок разбана IP
-                document.querySelectorAll('.unban-ip-btn').forEach(btn => {
+                // Обработчики для кнопок разбана
+                document.querySelectorAll('.unban-fingerprint-btn').forEach(btn => {
                     btn.addEventListener('click', async function() {
-                        const ip = this.getAttribute('data-ip');
+                        const fingerprint = this.getAttribute('data-fingerprint');
                         try {
-                            await jsonBinApp.ipBanManager.unbanIP(ip);
-                            showSyncStatus('IP разбанен', true);
-                            displayBannedIPs(); // Обновляем список
+                            await jsonBinApp.smartBanManager.unbanFingerprint(fingerprint);
+                            showSyncStatus('Отпечаток разбанен', true);
+                            displaySmartBans();
                         } catch (error) {
-                            console.error('Ошибка разбана IP:', error);
-                            showSyncStatus('Ошибка разбана IP', false);
+                            console.error('Ошибка разбана отпечатка:', error);
+                            showSyncStatus('Ошибка разбана отпечатка', false);
                         }
                     });
                 });
@@ -2688,7 +2841,7 @@
                     banConfirmModal.style.display = 'none';
                     bannedUsersModal.style.display = 'none';
                     localPostsModal.style.display = 'none';
-                    ipBanModal.style.display = 'none';
+                    smartBansModal.style.display = 'none';
                 });
             });
             
@@ -2723,8 +2876,8 @@
                 if (e.target === localPostsModal) {
                     localPostsModal.style.display = 'none';
                 }
-                if (e.target === ipBanModal) {
-                    ipBanModal.style.display = 'none';
+                if (e.target === smartBansModal) {
+                    smartBansModal.style.display = 'none';
                 }
             });
             
