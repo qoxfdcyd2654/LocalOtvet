@@ -276,7 +276,7 @@
             font-size: 14px;
             border: 1px solid transparent;
             display: flex;
-            justify-content: between;
+            justify-content: space-between;
             align-items: center;
         }
         
@@ -299,7 +299,6 @@
             border-radius: 6px;
             font-size: 11px;
             cursor: pointer;
-            margin-left: auto;
         }
         
         .subscribe-btn:hover {
@@ -308,6 +307,52 @@
         
         .subscribe-btn.subscribed {
             background: var(--gray-color);
+        }
+        
+        .communities-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .community-card {
+            background-color: var(--light-color);
+            border-radius: var(--radius);
+            padding: 20px;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .community-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+        }
+        
+        .community-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 15px;
+            color: white;
+            font-size: 24px;
+        }
+        
+        .community-stats {
+            display: flex;
+            margin-top: 15px;
+            font-size: 14px;
+            color: var(--gray-color);
+        }
+        
+        .community-stats span {
+            margin-right: 15px;
         }
         
         .main-content {
@@ -818,6 +863,22 @@
             cursor: pointer;
         }
         
+        .live-badge {
+            background-color: #4CAF50;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 10px;
+            margin-left: 5px;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+        
         /* Адаптивность */
         @media (max-width: 768px) {
             .app-container {
@@ -864,6 +925,10 @@
             .post-actions {
                 width: 100%;
                 justify-content: flex-end;
+            }
+            
+            .communities-grid {
+                grid-template-columns: 1fr;
             }
         }
     </style>
@@ -978,13 +1043,11 @@
                 
                 <div class="main-content" id="communities-page">
                     <div class="posts-container">
-                        <div class="post">
-                            <div class="post-content">
-                                <h3 class="post-title">Сообщества LocalOtvet</h3>
-                                <div class="post-text">
-                                    <p>Присоединяйтесь к тематическим сообществам по интересам. Подписывайтесь на категории, чтобы видеть их посты в разделе "Мои подписки".</p>
-                                </div>
-                            </div>
+                        <h2>Сообщества LocalOtvet <span class="live-badge">LIVE</span></h2>
+                        <p style="margin-bottom: 24px; color: var(--gray-color);">Присоединяйтесь к сообществам по интересам - статистика обновляется в реальном времени!</p>
+                        
+                        <div class="communities-grid" id="communitiesGrid">
+                            <!-- Сообщества будут генерироваться динамически -->
                         </div>
                     </div>
                 </div>
@@ -1133,7 +1196,10 @@
                         .select('*')
                         .order('created_at', { ascending: false });
 
-                    if (error) throw error;
+                    if (error) {
+                        console.error('Supabase error:', error);
+                        throw error;
+                    }
                     
                     return data.map(post => ({
                         id: post.id.toString(),
@@ -1176,7 +1242,10 @@
                         ])
                         .select();
 
-                    if (error) throw error;
+                    if (error) {
+                        console.error('Supabase insert error:', error);
+                        throw error;
+                    }
 
                     return {
                         id: data[0].id.toString(),
@@ -1325,8 +1394,8 @@
 
             // Войти в режим владельца
             becomeOwner(password) {
-                // Простой пароль для демонстрации
-                if (password === '9T9GJRFGVJGFIKFGMCJDKFDFFGFHDDHF00000000X0X0CEYFDSD56PASS') {
+                // Пароль для демонстрации - замените на свой
+                if (password === 'admin123') {
                     this.isOwner = true;
                     localStorage.setItem('localotvet_owner', 'true');
                     return true;
@@ -1360,6 +1429,88 @@
             }
         }
 
+        // Класс для управления сообществами
+        class CommunityManager {
+            constructor() {
+                this.categories = {
+                    'programming': { 
+                        name: 'Программирование', 
+                        icon: '💻', 
+                        desc: 'Обсуждаем языки программирования, фреймворки и лучшие практики',
+                        color: '#2563eb'
+                    },
+                    'technology': { 
+                        name: 'Технологии', 
+                        icon: '🔧', 
+                        desc: 'Новости технологий, обзоры гаджетов и обсуждение IT-индустрии',
+                        color: '#dc2626'
+                    },
+                    'design': { 
+                        name: 'Дизайн', 
+                        icon: '🎨', 
+                        desc: 'UI/UX дизайн, графика, веб-дизайн и креативные решения',
+                        color: '#7c3aed'
+                    },
+                    'education': { 
+                        name: 'Образование', 
+                        icon: '📚', 
+                        desc: 'Курсы, самообразование и карьерный рост в IT',
+                        color: '#16a34a'
+                    },
+                    'other': { 
+                        name: 'Другое', 
+                        icon: '🤔', 
+                        desc: 'Вопросы и ответы на любые темы',
+                        color: '#64748b'
+                    }
+                };
+            }
+
+            // Сбор статистики по категориям
+            calculateStats(posts) {
+                const stats = {};
+                
+                Object.keys(this.categories).forEach(category => {
+                    stats[category] = {
+                        postCount: 0,
+                        authors: new Set(),
+                        lastActivity: null
+                    };
+                });
+
+                posts.forEach(post => {
+                    const category = post.category || 'other';
+                    if (stats[category]) {
+                        stats[category].postCount++;
+                        stats[category].authors.add(post.authorId);
+                        
+                        const postTime = new Date(post.timestamp);
+                        if (!stats[category].lastActivity || postTime > stats[category].lastActivity) {
+                            stats[category].lastActivity = postTime;
+                        }
+                    }
+                });
+
+                return stats;
+            }
+
+            // Форматирование времени последней активности
+            formatLastActivity(date) {
+                if (!date) return 'нет активности';
+                
+                const now = new Date();
+                const diffMs = now - date;
+                const diffMins = Math.floor(diffMs / 60000);
+                const diffHours = Math.floor(diffMins / 60);
+                const diffDays = Math.floor(diffHours / 24);
+
+                if (diffMins < 1) return 'только что';
+                if (diffMins < 60) return `${diffMins} мин назад`;
+                if (diffHours < 24) return `${diffHours} ч назад`;
+                return `${diffDays} дн назад`;
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
             // Элементы DOM
             const postsContainer = document.getElementById('postsContainer');
@@ -1377,6 +1528,7 @@
             const subscribeButtons = document.querySelectorAll('.subscribe-btn');
             const subscriptionsSection = document.getElementById('subscriptionsSection');
             const subscriptionsList = document.getElementById('subscriptionsList');
+            const communitiesGrid = document.getElementById('communitiesGrid');
             
             // Элементы для управления пользователем
             const changeUsernameBtn = document.getElementById('changeUsernameBtn');
@@ -1400,6 +1552,7 @@
             // Создаем экземпляры классов
             const supabaseManager = new SupabaseManager();
             const userManager = new UserManager();
+            const communityManager = new CommunityManager();
 
             // Текущее состояние
             let allPosts = [];
@@ -1503,7 +1656,6 @@
                         subscriptionsList.appendChild(subscriptionItem);
                     });
                     
-                    // Добавляем обработчики для кнопок перехода
                     document.querySelectorAll('.go-to-posts-btn').forEach(btn => {
                         btn.addEventListener('click', function() {
                             const category = this.getAttribute('data-category');
@@ -1516,7 +1668,6 @@
                     });
                 }
                 
-                // Обновляем кнопки подписки
                 subscribeButtons.forEach(btn => {
                     const category = btn.getAttribute('data-category');
                     if (userManager.isSubscribedTo(category)) {
@@ -1615,13 +1766,11 @@
 
             // Настройка модальных окон
             function setupModalEvents() {
-                // Открытие модального окна создания поста
                 createPostBtn.addEventListener('click', () => {
                     createPostModal.style.display = 'flex';
                     document.getElementById('postTitle').focus();
                 });
                 
-                // Обработка создания поста
                 createPostForm.addEventListener('submit', async function(e) {
                     e.preventDefault();
                     
@@ -1638,21 +1787,18 @@
                     }
                 });
                 
-                // Закрытие модальных окон при клике на крестик
                 closeModalButtons.forEach(button => {
                     button.addEventListener('click', () => {
                         closeAllModals();
                     });
                 });
                 
-                // Закрытие модальных окон при клике вне их
                 window.addEventListener('click', (e) => {
                     if (e.target.classList.contains('modal')) {
                         closeAllModals();
                     }
                 });
                 
-                // Закрытие модальных окон при нажатии Escape
                 document.addEventListener('keydown', (e) => {
                     if (e.key === 'Escape') {
                         closeAllModals();
@@ -1759,12 +1905,65 @@
                 } else if (pageId === 'popular') {
                     sidebar.style.display = 'none';
                     renderPopularPosts();
+                } else if (pageId === 'communities') {
+                    sidebar.style.display = 'none';
+                    renderCommunitiesPage();
                 } else if (pageId === 'subscriptions') {
                     sidebar.style.display = 'none';
                     renderSubscriptionsPosts();
                 } else {
                     sidebar.style.display = 'none';
                 }
+            }
+            
+            // Рендер страницы сообществ
+            function renderCommunitiesPage() {
+                if (!communitiesGrid) return;
+                
+                const stats = communityManager.calculateStats(allPosts);
+                
+                communitiesGrid.innerHTML = '';
+                
+                Object.entries(communityManager.categories).forEach(([categoryKey, categoryInfo]) => {
+                    const categoryStats = stats[categoryKey] || { postCount: 0, authors: new Set(), lastActivity: null };
+                    const authorCount = categoryStats.authors.size;
+                    
+                    const communityCard = document.createElement('div');
+                    communityCard.className = 'community-card';
+                    communityCard.setAttribute('data-category', categoryKey);
+                    
+                    communityCard.innerHTML = `
+                        <div class="community-icon" style="background-color: ${categoryInfo.color}">${categoryInfo.icon}</div>
+                        <h3>${categoryInfo.name}</h3>
+                        <p>${categoryInfo.desc}</p>
+                        <div class="community-stats">
+                            <span>📝 ${categoryStats.postCount} постов</span>
+                            <span>👥 ${authorCount} участников</span>
+                        </div>
+                        <div style="margin-top: 10px; font-size: 12px; color: var(--gray-color);">
+                            📢 Активность: ${communityManager.formatLastActivity(categoryStats.lastActivity)}
+                        </div>
+                    `;
+                    
+                    communitiesGrid.appendChild(communityCard);
+                });
+                
+                document.querySelectorAll('.community-card').forEach(card => {
+                    card.addEventListener('click', function() {
+                        const category = this.getAttribute('data-category');
+                        showPage('home');
+                        navLinks.forEach(l => l.classList.remove('active'));
+                        document.querySelector('.nav-link[data-page="home"]').classList.add('active');
+                        categoryItems.forEach(item => item.classList.remove('active'));
+                        const categoryItem = document.querySelector(`.category-item[data-category="${category}"]`);
+                        if (categoryItem) {
+                            categoryItem.classList.add('active');
+                            currentCategory = category;
+                            filterPostsByCategory();
+                        }
+                        showSyncStatus(`Показаны посты из категории: ${communityManager.categories[category].name}`, true);
+                    });
+                });
             }
             
             // Фильтрация постов по категории
@@ -1993,7 +2192,6 @@
                     console.error('Ошибка создания поста:', error);
                     
                     if (error.message === 'BLOCKED_CONTENT') {
-                        // Сохраняем локально если пост содержит запрещенные слова
                         const localPost = {
                             id: 'local_' + Date.now().toString(),
                             title: title,
@@ -2061,11 +2259,9 @@
                     showSyncStatus('Удаление поста...', true);
                     
                     if (isLocal) {
-                        // Удаляем локальный пост
                         supabaseManager.localPosts = supabaseManager.localPosts.filter(post => post.id !== postId);
                         localStorage.setItem('localotvet_local_posts', JSON.stringify(supabaseManager.localPosts));
                     } else {
-                        // Удаляем пост из Supabase
                         await supabaseManager.deletePost(postId);
                     }
                     
