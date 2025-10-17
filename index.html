@@ -275,6 +275,9 @@
             transition: all 0.2s ease;
             font-size: 14px;
             border: 1px solid transparent;
+            display: flex;
+            justify-content: between;
+            align-items: center;
         }
         
         .category-item:hover {
@@ -286,6 +289,25 @@
             background-color: var(--primary-color);
             color: white;
             border-color: var(--primary-color);
+        }
+        
+        .subscribe-btn {
+            background: var(--success-color);
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            cursor: pointer;
+            margin-left: auto;
+        }
+        
+        .subscribe-btn:hover {
+            background: #15803d;
+        }
+        
+        .subscribe-btn.subscribed {
+            background: var(--gray-color);
         }
         
         .main-content {
@@ -704,6 +726,98 @@
             transform: none;
         }
         
+        .owner-tools {
+            margin-top: 20px;
+            padding: 16px;
+            background-color: #fffbeb;
+            border-radius: var(--radius);
+            border: 1px solid #fef3c7;
+        }
+        
+        .owner-tools h3 {
+            color: #d97706;
+            margin-bottom: 12px;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .owner-btn {
+            background-color: var(--owner-color);
+            color: #000;
+            border: none;
+            padding: 8px 12px;
+            border-radius: var(--radius);
+            cursor: pointer;
+            font-weight: 600;
+            width: 100%;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+        
+        .owner-btn:hover {
+            background-color: #eab308;
+        }
+        
+        .data-tools {
+            margin-top: 20px;
+            padding: 16px;
+            background-color: #f8fafc;
+            border-radius: var(--radius);
+            border: 1px solid var(--border-color);
+        }
+        
+        .data-tools h3 {
+            margin-bottom: 12px;
+            font-size: 16px;
+        }
+        
+        .data-tools-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .import-export-btn {
+            padding: 8px 12px;
+            background-color: var(--gray-color);
+            color: white;
+            border: none;
+            border-radius: var(--radius);
+            cursor: pointer;
+            font-size: 13px;
+        }
+        
+        .import-export-btn:hover {
+            background-color: #4b5563;
+        }
+        
+        .subscriptions-section {
+            margin-top: 20px;
+        }
+        
+        .subscription-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            margin-bottom: 6px;
+            background-color: #f0fdf4;
+            border-radius: var(--radius);
+            border: 1px solid #bbf7d0;
+        }
+        
+        .go-to-posts-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            cursor: pointer;
+        }
+        
         /* Адаптивность */
         @media (max-width: 768px) {
             .app-container {
@@ -768,6 +882,7 @@
                             <li><a href="#" class="nav-link active" data-page="home">Главная</a></li>
                             <li><a href="#" class="nav-link" data-page="popular">Популярное</a></li>
                             <li><a href="#" class="nav-link" data-page="communities">Сообщества</a></li>
+                            <li><a href="#" class="nav-link" data-page="subscriptions">Мои подписки</a></li>
                             <li><a href="#" class="nav-link" data-page="about">О проекте</a></li>
                         </ul>
                     </nav>
@@ -791,49 +906,73 @@
 
                     <button class="create-post-btn" id="createPostBtn">Создать пост</button>
                     
+                    <div class="sync-status" id="syncStatus"></div>
+                    
+                    <div class="owner-tools" id="ownerTools" style="display: none;">
+                        <h3>👑 Инструменты владельца</h3>
+                        <button class="owner-btn" id="nukeDataBtn">Очистить все посты</button>
+                        <button class="owner-btn" id="viewBannedUsersBtn">Просмотр забаненных</button>
+                        <button class="owner-btn" id="viewLocalPostsBtn">Просмотр локальных постов</button>
+                        <button class="owner-btn" id="viewSmartBansBtn">Умные баны</button>
+                        <button class="owner-btn" id="logoutOwnerBtn">Выйти из режима владельца</button>
+                    </div>
+                    
                     <div class="categories">
                         <h3>Категории</h3>
-                        <ul class="category-list">
-                            <li class="category-item active" data-category="all">Все категории</li>
-                            <li class="category-item" data-category="programming">Программирование</li>
-                            <li class="category-item" data-category="technology">Технологии</li>
-                            <li class="category-item" data-category="design">Дизайн</li>
-                            <li class="category-item" data-category="education">Образование</li>
-                            <li class="category-item" data-category="other">Другое</li>
+                        <ul class="category-list" id="categoryList">
+                            <li class="category-item active" data-category="all">
+                                Все категории
+                            </li>
+                            <li class="category-item" data-category="programming">
+                                Программирование
+                                <button class="subscribe-btn" data-category="programming">Подписаться</button>
+                            </li>
+                            <li class="category-item" data-category="technology">
+                                Технологии
+                                <button class="subscribe-btn" data-category="technology">Подписаться</button>
+                            </li>
+                            <li class="category-item" data-category="design">
+                                Дизайн
+                                <button class="subscribe-btn" data-category="design">Подписаться</button>
+                            </li>
+                            <li class="category-item" data-category="education">
+                                Образование
+                                <button class="subscribe-btn" data-category="education">Подписаться</button>
+                            </li>
+                            <li class="category-item" data-category="other">
+                                Другое
+                                <button class="subscribe-btn" data-category="other">Подписаться</button>
+                            </li>
                         </ul>
+                    </div>
+                    
+                    <div class="subscriptions-section" id="subscriptionsSection" style="display: none;">
+                        <h3>Мои подписки</h3>
+                        <div id="subscriptionsList">
+                            <!-- Подписки будут здесь -->
+                        </div>
+                    </div>
+                    
+                    <div class="data-tools">
+                        <h3>Работа с данными</h3>
+                        <div class="data-tools-buttons">
+                            <button class="import-export-btn" id="exportDataBtn">Экспорт данных</button>
+                            <button class="import-export-btn" id="importDataBtn">Импорт данных</button>
+                            <button class="import-export-btn" id="becomeOwnerBtn">Режим владельца</button>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Основной контент -->
                 <div class="main-content active" id="home-page">
                     <div class="posts-container" id="postsContainer">
-                        <div class="post">
-                            <div class="post-content">
-                                <h3 class="post-title">Добро пожаловать в LocalOtvet!</h3>
-                                <div class="post-text">
-                                    <p>Это современная платформа для общения и обмена знаниями. Создавайте посты, задавайте вопросы, делитесь опытом!</p>
-                                    <p style="margin-top: 12px;">Нажмите кнопку "Создать пост" в боковой панели, чтобы начать.</p>
-                                </div>
-                                <div class="post-footer">
-                                    <div class="post-meta">
-                                        <small>Только что | 👤 Система</small>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        <!-- Посты будут загружаться здесь -->
                     </div>
                 </div>
                 
                 <div class="main-content" id="popular-page">
-                    <div class="posts-container">
-                        <div class="post">
-                            <div class="post-content">
-                                <h3 class="post-title">Раздел "Популярное"</h3>
-                                <div class="post-text">
-                                    <p>Здесь будут отображаться самые популярные посты сообщества.</p>
-                                </div>
-                            </div>
-                        </div>
+                    <div class="posts-container" id="popularPostsContainer">
+                        <!-- Популярные посты будут загружаться здесь -->
                     </div>
                 </div>
                 
@@ -841,12 +980,18 @@
                     <div class="posts-container">
                         <div class="post">
                             <div class="post-content">
-                                <h3 class="post-title">Сообщества</h3>
+                                <h3 class="post-title">Сообщества LocalOtvet</h3>
                                 <div class="post-text">
-                                    <p>Присоединяйтесь к тематическим сообществам по интересам.</p>
+                                    <p>Присоединяйтесь к тематическим сообществам по интересам. Подписывайтесь на категории, чтобы видеть их посты в разделе "Мои подписки".</p>
                                 </div>
                             </div>
                         </div>
+                    </div>
+                </div>
+                
+                <div class="main-content" id="subscriptions-page">
+                    <div class="posts-container" id="subscriptionsPostsContainer">
+                        <!-- Посты из подписок будут здесь -->
                     </div>
                 </div>
                 
@@ -922,10 +1067,304 @@
         </div>
     </div>
 
+    <div class="modal" id="ownerModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Режим владельца</h2>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="form-group">
+                <label for="ownerPassword">Введите пароль владельца:</label>
+                <input type="password" id="ownerPassword" class="form-control" placeholder="Пароль">
+                <small style="color: var(--gray-color); margin-top: 5px; display: block;">
+                    Только владелец сайта имеет доступ к этому режиму.
+                </small>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary close-modal">Отмена</button>
+                <button class="btn btn-primary" id="verifyOwnerBtn">Подтвердить</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="importDataModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Импорт данных</h2>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="form-group">
+                <label for="importData">Вставьте данные для импорта (JSON):</label>
+                <textarea id="importData" class="form-control" rows="5"></textarea>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary close-modal">Отмена</button>
+                <button class="btn btn-primary" id="confirmImportBtn">Импортировать</button>
+            </div>
+        </div>
+    </div>
+
     <script>
+        // Конфигурация Supabase
+        const SUPABASE_CONFIG = {
+            url: 'https://ncwejzjbgpjdzeiqolks.supabase.co',
+            key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5jd2VqempiZ3BqZHplaXFvbGtzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk3NTg0NjgsImV4cCI6MjA3NTMzNDQ2OH0.NaaEVVEyz444wMJcty4mjrsUs4OGHJ3a3Y5d3UTikhs'
+        };
+
+        // Черный список запрещенных слов
+        const BLACKLIST = [
+            'докс', 'dokc', 'dокс', 'рианочка', 'рианочке', 'рианочки', 
+            'ебать', 'хуйня', 'блять', '666 лайков', '666лайков',
+            'взламывают', 'хак', 'hack', 'взлом', 'hackers', 'хакеры',
+        ];
+
+        // Класс для работы с Supabase
+        class SupabaseManager {
+            constructor() {
+                this.supabase = supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.key);
+                this.localPosts = JSON.parse(localStorage.getItem('localotvet_local_posts') || '[]');
+            }
+
+            // Получить все посты из Supabase
+            async getPosts() {
+                try {
+                    const { data, error } = await this.supabase
+                        .from('posts')
+                        .select('*')
+                        .order('created_at', { ascending: false });
+
+                    if (error) throw error;
+                    
+                    return data.map(post => ({
+                        id: post.id.toString(),
+                        title: post.title,
+                        content: post.content,
+                        author: post.author,
+                        authorId: post.author_id,
+                        category: post.category,
+                        timestamp: post.created_at,
+                        votes: post.votes || 0,
+                        comments: post.comments || [],
+                        local: false
+                    }));
+                } catch (error) {
+                    console.error('Ошибка загрузки постов:', error);
+                    return [];
+                }
+            }
+
+            // Добавить пост в Supabase
+            async addPost(title, content, author, authorId, category) {
+                try {
+                    // Проверка на запрещенные слова
+                    if (this.containsBlacklistedWords(title + ' ' + content)) {
+                        throw new Error('BLOCKED_CONTENT');
+                    }
+
+                    const { data, error } = await this.supabase
+                        .from('posts')
+                        .insert([
+                            {
+                                title: title,
+                                content: content,
+                                author: author,
+                                author_id: authorId,
+                                category: category,
+                                votes: 0,
+                                comments: []
+                            }
+                        ])
+                        .select();
+
+                    if (error) throw error;
+
+                    return {
+                        id: data[0].id.toString(),
+                        title: data[0].title,
+                        content: data[0].content,
+                        author: data[0].author,
+                        authorId: data[0].author_id,
+                        category: data[0].category,
+                        timestamp: data[0].created_at,
+                        votes: 0,
+                        comments: [],
+                        local: false
+                    };
+                } catch (error) {
+                    console.error('Ошибка создания поста:', error);
+                    throw error;
+                }
+            }
+
+            // Обновить голоса поста
+            async updateVotes(postId, votes) {
+                try {
+                    const { error } = await this.supabase
+                        .from('posts')
+                        .update({ votes: votes })
+                        .eq('id', postId);
+
+                    if (error) throw error;
+                    return true;
+                } catch (error) {
+                    console.error('Ошибка обновления голосов:', error);
+                    throw error;
+                }
+            }
+
+            // Добавить комментарий
+            async addComment(postId, text, author, authorId) {
+                try {
+                    const { data: postData, error: getError } = await this.supabase
+                        .from('posts')
+                        .select('comments')
+                        .eq('id', postId)
+                        .single();
+
+                    if (getError) throw getError;
+
+                    const comments = postData.comments || [];
+                    comments.push({
+                        text: text,
+                        author: author,
+                        authorId: authorId,
+                        timestamp: new Date().toISOString()
+                    });
+
+                    const { error: updateError } = await this.supabase
+                        .from('posts')
+                        .update({ comments: comments })
+                        .eq('id', postId);
+
+                    if (updateError) throw updateError;
+                    return comments;
+                } catch (error) {
+                    console.error('Ошибка добавления комментария:', error);
+                    throw error;
+                }
+            }
+
+            // Удалить пост
+            async deletePost(postId) {
+                try {
+                    const { error } = await this.supabase
+                        .from('posts')
+                        .delete()
+                        .eq('id', postId);
+
+                    if (error) throw error;
+                    return true;
+                } catch (error) {
+                    console.error('Ошибка удаления поста:', error);
+                    throw error;
+                }
+            }
+
+            // Очистить все посты
+            async nukeAllPosts() {
+                try {
+                    const { error } = await this.supabase
+                        .from('posts')
+                        .delete()
+                        .neq('id', 0);
+
+                    if (error) throw error;
+                    return true;
+                } catch (error) {
+                    console.error('Ошибка очистки постов:', error);
+                    throw error;
+                }
+            }
+
+            // Проверка на запрещенные слова
+            containsBlacklistedWords(text) {
+                if (!text) return false;
+                const lowerText = text.toLowerCase();
+                return BLACKLIST.some(word => lowerText.includes(word.toLowerCase()));
+            }
+
+            // Сохранить локальный пост
+            saveLocalPost(post) {
+                this.localPosts.unshift(post);
+                localStorage.setItem('localotvet_local_posts', JSON.stringify(this.localPosts));
+                return post;
+            }
+
+            // Получить все посты (Supabase + локальные)
+            async getAllPosts() {
+                const supabasePosts = await this.getPosts();
+                return [...supabasePosts, ...this.localPosts].sort((a, b) => 
+                    new Date(b.timestamp) - new Date(a.timestamp)
+                );
+            }
+        }
+
+        // Класс для управления пользователем
+        class UserManager {
+            constructor() {
+                this.userId = localStorage.getItem('localotvet_userId');
+                if (!this.userId) {
+                    this.userId = 'user_' + Date.now().toString() + '_' + Math.random().toString(36).substr(2, 9);
+                    localStorage.setItem('localotvet_userId', this.userId);
+                }
+                
+                this.username = localStorage.getItem('localotvet_username') || 'Аноним';
+                this.isOwner = localStorage.getItem('localotvet_owner') === 'true';
+                this.subscriptions = JSON.parse(localStorage.getItem('localotvet_subscriptions') || '[]');
+            }
+
+            // Установить имя пользователя
+            setUsername(newUsername) {
+                if (newUsername && newUsername.trim() !== '') {
+                    this.username = newUsername.trim().substring(0, 20);
+                } else {
+                    this.username = 'Аноним';
+                }
+                localStorage.setItem('localotvet_username', this.username);
+            }
+
+            // Войти в режим владельца
+            becomeOwner(password) {
+                // Простой пароль для демонстрации
+                if (password === '9T9GJRFGVJGFIKFGMCJDKFDFFGFHDDHF00000000X0X0CEYFDSD56PASS') {
+                    this.isOwner = true;
+                    localStorage.setItem('localotvet_owner', 'true');
+                    return true;
+                }
+                return false;
+            }
+
+            // Выйти из режима владельца
+            logoutOwner() {
+                this.isOwner = false;
+                localStorage.removeItem('localotvet_owner');
+            }
+
+            // Подписаться на категорию
+            subscribeToCategory(category) {
+                if (!this.subscriptions.includes(category)) {
+                    this.subscriptions.push(category);
+                    localStorage.setItem('localotvet_subscriptions', JSON.stringify(this.subscriptions));
+                }
+            }
+
+            // Отписаться от категории
+            unsubscribeFromCategory(category) {
+                this.subscriptions = this.subscriptions.filter(sub => sub !== category);
+                localStorage.setItem('localotvet_subscriptions', JSON.stringify(this.subscriptions));
+            }
+
+            // Проверить подписку на категорию
+            isSubscribedTo(category) {
+                return this.subscriptions.includes(category);
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
             // Элементы DOM
             const postsContainer = document.getElementById('postsContainer');
+            const popularPostsContainer = document.getElementById('popularPostsContainer');
+            const subscriptionsPostsContainer = document.getElementById('subscriptionsPostsContainer');
             const createPostBtn = document.getElementById('createPostBtn');
             const createPostModal = document.getElementById('createPostModal');
             const createPostForm = document.getElementById('createPostForm');
@@ -935,6 +1374,9 @@
             const homeBtn = document.getElementById('homeBtn');
             const sidebar = document.getElementById('sidebar');
             const categoryItems = document.querySelectorAll('.category-item');
+            const subscribeButtons = document.querySelectorAll('.subscribe-btn');
+            const subscriptionsSection = document.getElementById('subscriptionsSection');
+            const subscriptionsList = document.getElementById('subscriptionsList');
             
             // Элементы для управления пользователем
             const changeUsernameBtn = document.getElementById('changeUsernameBtn');
@@ -942,38 +1384,74 @@
             const usernameInput = document.getElementById('usernameInput');
             const saveUsernameBtn = document.getElementById('saveUsernameBtn');
             
+            // Элементы для режима владельца
+            const becomeOwnerBtn = document.getElementById('becomeOwnerBtn');
+            const ownerModal = document.getElementById('ownerModal');
+            const ownerPassword = document.getElementById('ownerPassword');
+            const verifyOwnerBtn = document.getElementById('verifyOwnerBtn');
+            const ownerTools = document.getElementById('ownerTools');
+            const logoutOwnerBtn = document.getElementById('logoutOwnerBtn');
+            const nukeDataBtn = document.getElementById('nukeDataBtn');
+            const exportDataBtn = document.getElementById('exportDataBtn');
+            const importDataBtn = document.getElementById('importDataBtn');
+            const importDataModal = document.getElementById('importDataModal');
+            const confirmImportBtn = document.getElementById('confirmImportBtn');
+            
+            // Создаем экземпляры классов
+            const supabaseManager = new SupabaseManager();
+            const userManager = new UserManager();
+
             // Текущее состояние
+            let allPosts = [];
             let currentCategory = 'all';
-            let currentUsername = 'Аноним';
-            let userId = 'user_' + Date.now().toString() + '_' + Math.random().toString(36).substr(2, 9);
 
             // Инициализация
             initializeApp();
             
-            function initializeApp() {
-                loadUserData();
+            async function initializeApp() {
+                await loadPosts();
                 setupNavigation();
                 setupUserEvents();
                 setupModalEvents();
                 setupCategories();
+                setupSubscriptions();
+                setupOwnerEvents();
+                updateUserDisplay();
+                updateSubscriptionsDisplay();
             }
             
-            // Загрузка данных пользователя
-            function loadUserData() {
-                const savedUsername = localStorage.getItem('localotvet_username');
-                const savedUserId = localStorage.getItem('localotvet_userId');
-                
-                if (savedUsername) {
-                    currentUsername = savedUsername;
+            // Загрузка постов
+            async function loadPosts() {
+                try {
+                    showSyncStatus('Загрузка постов...', true);
+                    allPosts = await supabaseManager.getAllPosts();
+                    
+                    if (allPosts.length === 0) {
+                        postsContainer.innerHTML = `
+                            <div class="post">
+                                <div class="post-content">
+                                    <p>Пока нет ни одного поста. Будьте первым, кто создаст пост!</p>
+                                </div>
+                            </div>
+                        `;
+                        showSyncStatus('Постов нет. Создайте первый!', true);
+                        return;
+                    }
+                    
+                    filterPostsByCategory();
+                    showSyncStatus(`Загружено ${allPosts.length} постов`, true);
+                    
+                } catch (error) {
+                    console.error('Ошибка загрузки постов:', error);
+                    postsContainer.innerHTML = `
+                        <div class="post">
+                            <div class="post-content">
+                                <p style="color: red;">Ошибка загрузки данных: ${error.message}</p>
+                            </div>
+                        </div>
+                    `;
+                    showSyncStatus('Ошибка загрузки постов', false);
                 }
-                
-                if (savedUserId) {
-                    userId = savedUserId;
-                } else {
-                    localStorage.setItem('localotvet_userId', userId);
-                }
-                
-                updateUserDisplay();
             }
             
             // Обновление отображения пользователя
@@ -983,27 +1461,116 @@
                 const userIdDisplay = document.getElementById('userIdDisplay');
                 
                 if (usernameDisplay) {
-                    usernameDisplay.textContent = currentUsername;
+                    usernameDisplay.textContent = userManager.username;
+                    if (userManager.isOwner) {
+                        usernameDisplay.innerHTML = userManager.username + '<span class="owner-badge">👑 ВЛАДЕЛЕЦ</span>';
+                    }
                 }
                 
                 if (userAvatar) {
-                    userAvatar.textContent = currentUsername === 'Аноним' ? 'A' : currentUsername.charAt(0).toUpperCase();
+                    userAvatar.textContent = userManager.username === 'Аноним' ? 'A' : userManager.username.charAt(0).toUpperCase();
+                    
+                    if (userManager.isOwner) {
+                        userAvatar.style.backgroundColor = 'var(--owner-color)';
+                        userAvatar.style.color = '#000';
+                    }
                 }
                 
                 if (userIdDisplay) {
-                    const shortId = userId.substring(0, 8) + '...';
+                    const shortId = userManager.userId.substring(0, 8) + '...';
                     userIdDisplay.textContent = `ID: ${shortId}`;
                 }
+
+                if (ownerTools) {
+                    ownerTools.style.display = userManager.isOwner ? 'block' : 'none';
+                }
+            }
+            
+            // Обновление отображения подписок
+            function updateSubscriptionsDisplay() {
+                const hasSubscriptions = userManager.subscriptions.length > 0;
+                subscriptionsSection.style.display = hasSubscriptions ? 'block' : 'none';
+                
+                if (hasSubscriptions) {
+                    subscriptionsList.innerHTML = '';
+                    userManager.subscriptions.forEach(category => {
+                        const subscriptionItem = document.createElement('div');
+                        subscriptionItem.className = 'subscription-item';
+                        subscriptionItem.innerHTML = `
+                            <span>${getCategoryName(category)}</span>
+                            <button class="go-to-posts-btn" data-category="${category}">Перейти к постам</button>
+                        `;
+                        subscriptionsList.appendChild(subscriptionItem);
+                    });
+                    
+                    // Добавляем обработчики для кнопок перехода
+                    document.querySelectorAll('.go-to-posts-btn').forEach(btn => {
+                        btn.addEventListener('click', function() {
+                            const category = this.getAttribute('data-category');
+                            showPage('home');
+                            categoryItems.forEach(item => item.classList.remove('active'));
+                            document.querySelector(`.category-item[data-category="${category}"]`).classList.add('active');
+                            currentCategory = category;
+                            filterPostsByCategory();
+                        });
+                    });
+                }
+                
+                // Обновляем кнопки подписки
+                subscribeButtons.forEach(btn => {
+                    const category = btn.getAttribute('data-category');
+                    if (userManager.isSubscribedTo(category)) {
+                        btn.textContent = 'Отписаться';
+                        btn.classList.add('subscribed');
+                    } else {
+                        btn.textContent = 'Подписаться';
+                        btn.classList.remove('subscribed');
+                    }
+                });
+            }
+            
+            // Получить название категории
+            function getCategoryName(category) {
+                const names = {
+                    'programming': 'Программирование',
+                    'technology': 'Технологии',
+                    'design': 'Дизайн',
+                    'education': 'Образование',
+                    'other': 'Другое'
+                };
+                return names[category] || category;
             }
             
             // Настройка категорий
             function setupCategories() {
                 categoryItems.forEach(item => {
                     item.addEventListener('click', function() {
-                        categoryItems.forEach(cat => cat.classList.remove('active'));
-                        this.classList.add('active');
-                        currentCategory = this.getAttribute('data-category');
-                        filterPostsByCategory();
+                        if (this.getAttribute('data-category') === 'all') {
+                            categoryItems.forEach(cat => cat.classList.remove('active'));
+                            this.classList.add('active');
+                            currentCategory = 'all';
+                            filterPostsByCategory();
+                        }
+                    });
+                });
+            }
+            
+            // Настройка подписок
+            function setupSubscriptions() {
+                subscribeButtons.forEach(btn => {
+                    btn.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        const category = this.getAttribute('data-category');
+                        
+                        if (userManager.isSubscribedTo(category)) {
+                            userManager.unsubscribeFromCategory(category);
+                            showNotification(`Отписались от ${getCategoryName(category)}`, true);
+                        } else {
+                            userManager.subscribeToCategory(category);
+                            showNotification(`Подписались на ${getCategoryName(category)}`, true);
+                        }
+                        
+                        updateSubscriptionsDisplay();
                     });
                 });
             }
@@ -1033,19 +1600,13 @@
             // Настройка событий пользователя
             function setupUserEvents() {
                 changeUsernameBtn.addEventListener('click', () => {
-                    usernameInput.value = currentUsername === 'Аноним' ? '' : currentUsername;
+                    usernameInput.value = userManager.username === 'Аноним' ? '' : userManager.username;
                     usernameModal.style.display = 'flex';
                 });
                 
                 saveUsernameBtn.addEventListener('click', () => {
                     const newUsername = usernameInput.value.trim();
-                    if (newUsername === '') {
-                        currentUsername = 'Аноним';
-                    } else {
-                        currentUsername = newUsername.substring(0, 20);
-                    }
-                    
-                    localStorage.setItem('localotvet_username', currentUsername);
+                    userManager.setUsername(newUsername);
                     updateUserDisplay();
                     usernameModal.style.display = 'none';
                     showNotification('Никнейм изменен', true);
@@ -1061,7 +1622,7 @@
                 });
                 
                 // Обработка создания поста
-                createPostForm.addEventListener('submit', function(e) {
+                createPostForm.addEventListener('submit', async function(e) {
                     e.preventDefault();
                     
                     const title = document.getElementById('postTitle').value;
@@ -1069,7 +1630,7 @@
                     const category = document.getElementById('postCategory').value;
                     
                     if (title && content && category) {
-                        createPost(title, content, category);
+                        await createPost(title, content, category);
                         createPostForm.reset();
                         createPostModal.style.display = 'none';
                     } else {
@@ -1099,6 +1660,84 @@
                 });
             }
             
+            // Настройка событий владельца
+            function setupOwnerEvents() {
+                becomeOwnerBtn.addEventListener('click', () => {
+                    ownerModal.style.display = 'flex';
+                });
+
+                verifyOwnerBtn.addEventListener('click', () => {
+                    const password = ownerPassword.value;
+                    
+                    if (!password) {
+                        showNotification('Введите пароль', false);
+                        return;
+                    }
+
+                    if (userManager.becomeOwner(password)) {
+                        ownerModal.style.display = 'none';
+                        ownerPassword.value = '';
+                        updateUserDisplay();
+                        showNotification('Режим владельца активирован!', true);
+                    } else {
+                        showNotification('Неверный пароль', false);
+                    }
+                });
+
+                logoutOwnerBtn.addEventListener('click', () => {
+                    userManager.logoutOwner();
+                    updateUserDisplay();
+                    showNotification('Режим владельца деактивирован', true);
+                });
+
+                nukeDataBtn.addEventListener('click', async () => {
+                    if (confirm('⚠️ ВЫ УВЕРЕНЫ, ЧТО ХОТИТЕ УДАЛИТЬ ВСЕ ПОСТЫ?\n\nЭто действие нельзя отменить!')) {
+                        try {
+                            await supabaseManager.nukeAllPosts();
+                            showNotification('Все посты удалены!', true);
+                            await loadPosts();
+                        } catch (error) {
+                            console.error('Ошибка очистки:', error);
+                            showNotification('Ошибка удаления постов', false);
+                        }
+                    }
+                });
+
+                exportDataBtn.addEventListener('click', () => {
+                    const dataStr = JSON.stringify(allPosts, null, 2);
+                    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+                    
+                    const linkElement = document.createElement('a');
+                    linkElement.setAttribute('href', dataUri);
+                    linkElement.setAttribute('download', 'localotvet_data.json');
+                    linkElement.click();
+                    
+                    showNotification('Данные экспортированы', true);
+                });
+
+                importDataBtn.addEventListener('click', () => {
+                    importDataModal.style.display = 'flex';
+                });
+
+                confirmImportBtn.addEventListener('click', () => {
+                    const importDataText = document.getElementById('importData').value;
+                    
+                    if (!importDataText) {
+                        showNotification('Введите данные для импорта', false);
+                        return;
+                    }
+
+                    try {
+                        const importedData = JSON.parse(importDataText);
+                        showNotification('Данные импортированы (функция в разработке)', true);
+                        importDataModal.style.display = 'none';
+                        document.getElementById('importData').value = '';
+                    } catch (e) {
+                        showNotification('Ошибка при разборе JSON: ' + e.message, false);
+                    }
+                });
+            }
+            
             // Закрытие всех модальных окон
             function closeAllModals() {
                 document.querySelectorAll('.modal').forEach(modal => {
@@ -1116,77 +1755,34 @@
                 
                 if (pageId === 'home') {
                     sidebar.style.display = 'block';
+                    filterPostsByCategory();
+                } else if (pageId === 'popular') {
+                    sidebar.style.display = 'none';
+                    renderPopularPosts();
+                } else if (pageId === 'subscriptions') {
+                    sidebar.style.display = 'none';
+                    renderSubscriptionsPosts();
                 } else {
                     sidebar.style.display = 'none';
                 }
             }
             
-            // Функция создания поста
-            function createPost(title, content, category) {
-                const post = {
-                    id: 'post_' + Date.now().toString(),
-                    title: title,
-                    content: content,
-                    author: currentUsername,
-                    authorId: userId,
-                    category: category,
-                    timestamp: new Date().toISOString(),
-                    votes: 0,
-                    comments: []
-                };
-                
-                // Сохраняем пост в localStorage для демонстрации
-                const posts = getPostsFromStorage();
-                posts.unshift(post);
-                localStorage.setItem('localotvet_posts', JSON.stringify(posts));
-                
-                // Обновляем отображение
-                loadPosts();
-                showNotification('Пост успешно создан', true);
-            }
-            
-            // Получение постов из localStorage
-            function getPostsFromStorage() {
-                const postsJson = localStorage.getItem('localotvet_posts');
-                return postsJson ? JSON.parse(postsJson) : [];
-            }
-            
-            // Загрузка постов
-            function loadPosts() {
-                const posts = getPostsFromStorage();
-                
-                if (posts.length === 0) {
-                    postsContainer.innerHTML = `
-                        <div class="post">
-                            <div class="post-content">
-                                <p>Пока нет ни одного поста. Будьте первым, кто создаст пост!</p>
-                            </div>
-                        </div>
-                    `;
-                    return;
-                }
-                
-                filterPostsByCategory();
-            }
-            
             // Фильтрация постов по категории
             function filterPostsByCategory() {
-                const posts = getPostsFromStorage();
-                
                 if (currentCategory === 'all') {
-                    renderPosts(posts);
+                    renderPosts(allPosts, postsContainer);
                 } else {
-                    const filteredPosts = posts.filter(post => post.category === currentCategory);
-                    renderPosts(filteredPosts);
+                    const filteredPosts = allPosts.filter(post => post.category === currentCategory);
+                    renderPosts(filteredPosts, postsContainer);
                 }
             }
             
             // Отрисовка постов
-            function renderPosts(posts) {
-                postsContainer.innerHTML = '';
+            function renderPosts(posts, container) {
+                container.innerHTML = '';
                 
                 if (posts.length === 0) {
-                    postsContainer.innerHTML = `
+                    container.innerHTML = `
                         <div class="post">
                             <div class="post-content">
                                 <p>Постов не найдено.</p>
@@ -1197,6 +1793,9 @@
                 }
                 
                 posts.forEach((post) => {
+                    const isAuthor = post.authorId === userManager.userId;
+                    const isOwner = userManager.isOwner;
+                    
                     let categoryName = 'Другое';
                     switch(post.category) {
                         case 'programming':
@@ -1215,14 +1814,17 @@
                     
                     const postElement = document.createElement('div');
                     postElement.className = 'post';
+                    if (post.local) {
+                        postElement.classList.add('local-post');
+                    }
                     
                     postElement.innerHTML = `
                         <div class="post-header">
                             <div class="post-category">${categoryName}</div>
                             <div class="post-votes">
-                                <button class="vote-btn upvote" data-post-id="${post.id}">▲</button>
+                                <button class="vote-btn upvote" data-post-id="${post.id}" ${post.local ? 'disabled' : ''}>▲</button>
                                 <span class="vote-count">${post.votes || 0}</span>
-                                <button class="vote-btn downvote" data-post-id="${post.id}">▼</button>
+                                <button class="vote-btn downvote" data-post-id="${post.id}" ${post.local ? 'disabled' : ''}>▼</button>
                             </div>
                             <div style="flex: 1;">
                                 <h3 class="post-title">${escapeHtml(post.title)}</h3>
@@ -1231,19 +1833,22 @@
                         </div>
                         <div class="post-footer">
                             <div class="post-meta">
-                                <small>${new Date(post.timestamp).toLocaleString('ru-RU')} | 👤 ${post.author || 'Аноним'}</small>
+                                <small>${new Date(post.timestamp).toLocaleString('ru-RU')} | 👤 ${post.author || 'Аноним'} 
+                                ${post.local ? '<span style="color: var(--local-color); font-weight: 600;">[Локальный]</span>' : ''}
+                                </small>
                             </div>
                             <div class="post-actions">
-                                <button class="comments-btn" data-post-id="${post.id}">
+                                <button class="comments-btn" data-post-id="${post.id}" ${post.local ? 'disabled' : ''}>
                                     💬 Комментарии (${post.comments ? post.comments.length : 0})
                                 </button>
-                                ${post.authorId === userId ? `
-                                    <button class="delete-post-btn" data-post-id="${post.id}">
-                                        🗑️ Удалить
+                                ${(isAuthor || isOwner) ? `
+                                    <button class="delete-post-btn ${isOwner && !isAuthor ? 'owner-delete' : ''}" data-post-id="${post.id}" data-local="${post.local}">
+                                        🗑️ ${isOwner && !isAuthor ? 'Удалить (владелец)' : 'Удалить'}
                                     </button>
                                 ` : ''}
                             </div>
                         </div>
+                        ${!post.local ? `
                         <div class="comments-section" id="comments-${post.id}">
                             ${post.comments && post.comments.length > 0 ? 
                                 post.comments.map(comment => `
@@ -1261,12 +1866,61 @@
                                 <button class="submit-comment-btn" data-post-id="${post.id}">Отправить</button>
                             </div>
                         </div>
+                        ` : ''}
                     `;
                     
-                    postsContainer.appendChild(postElement);
+                    container.appendChild(postElement);
                 });
                 
                 attachPostEventHandlers();
+            }
+            
+            // Отрисовка популярных постов
+            function renderPopularPosts() {
+                if (allPosts.length === 0) {
+                    popularPostsContainer.innerHTML = `
+                        <div class="post">
+                            <div class="post-content">
+                                <p>Пока нет ни одного поста.</p>
+                            </div>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                const popularPosts = [...allPosts].sort((a, b) => (b.votes || 0) - (a.votes || 0));
+                renderPosts(popularPosts, popularPostsContainer);
+            }
+            
+            // Отрисовка постов из подписок
+            function renderSubscriptionsPosts() {
+                if (userManager.subscriptions.length === 0) {
+                    subscriptionsPostsContainer.innerHTML = `
+                        <div class="post">
+                            <div class="post-content">
+                                <p>У вас нет подписок. Подпишитесь на категории в боковой панели!</p>
+                            </div>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                const subscriptionPosts = allPosts.filter(post => 
+                    userManager.subscriptions.includes(post.category)
+                );
+                
+                if (subscriptionPosts.length === 0) {
+                    subscriptionsPostsContainer.innerHTML = `
+                        <div class="post">
+                            <div class="post-content">
+                                <p>В ваших подписках пока нет постов.</p>
+                            </div>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                renderPosts(subscriptionPosts, subscriptionsPostsContainer);
             }
             
             // Функция для экранирования HTML
@@ -1284,10 +1938,10 @@
             // Присоединение обработчиков событий к постам
             function attachPostEventHandlers() {
                 document.querySelectorAll('.vote-btn').forEach(btn => {
-                    btn.addEventListener('click', function() {
+                    btn.addEventListener('click', async function() {
                         const postId = this.getAttribute('data-post-id');
                         const isUpvote = this.classList.contains('upvote');
-                        votePost(postId, isUpvote);
+                        await votePost(postId, isUpvote);
                     });
                 });
                 
@@ -1302,13 +1956,13 @@
                 });
                 
                 document.querySelectorAll('.submit-comment-btn').forEach(btn => {
-                    btn.addEventListener('click', function() {
+                    btn.addEventListener('click', async function() {
                         const postId = this.getAttribute('data-post-id');
                         const textarea = document.querySelector(`.comment-textarea[data-post-id="${postId}"]`);
                         if (textarea) {
                             const commentText = textarea.value.trim();
                             if (commentText) {
-                                addComment(postId, commentText);
+                                await addComment(postId, commentText);
                                 textarea.value = '';
                             }
                         }
@@ -1316,74 +1970,115 @@
                 });
                 
                 document.querySelectorAll('.delete-post-btn').forEach(btn => {
-                    btn.addEventListener('click', function() {
+                    btn.addEventListener('click', async function() {
                         const postId = this.getAttribute('data-post-id');
+                        const isLocal = this.getAttribute('data-local') === 'true';
+                        
                         if (confirm('Вы уверены, что хотите удалить этот пост?')) {
-                            deletePost(postId);
+                            await deletePost(postId, isLocal);
                         }
                     });
                 });
             }
             
-            // Функция голосования за пост
-            function votePost(postId, isUpvote) {
-                const posts = getPostsFromStorage();
-                const postIndex = posts.findIndex(p => p.id === postId);
-                
-                if (postIndex !== -1) {
-                    if (isUpvote) {
-                        posts[postIndex].votes = (posts[postIndex].votes || 0) + 1;
+            // Функция создания поста
+            async function createPost(title, content, category) {
+                try {
+                    showSyncStatus('Создание поста...', true);
+                    const post = await supabaseManager.addPost(title, content, userManager.username, userManager.userId, category);
+                    await loadPosts();
+                    showNotification('Пост успешно создан', true);
+                    
+                } catch (error) {
+                    console.error('Ошибка создания поста:', error);
+                    
+                    if (error.message === 'BLOCKED_CONTENT') {
+                        // Сохраняем локально если пост содержит запрещенные слова
+                        const localPost = {
+                            id: 'local_' + Date.now().toString(),
+                            title: title,
+                            content: '[ЗАБЛОКИРОВАНО] ' + content,
+                            author: userManager.username,
+                            authorId: userManager.userId,
+                            category: category,
+                            timestamp: new Date().toISOString(),
+                            votes: 0,
+                            comments: [],
+                            local: true
+                        };
+                        
+                        supabaseManager.saveLocalPost(localPost);
+                        await loadPosts();
+                        showNotification('Пост сохранен локально (обнаружены запрещенные слова)', false);
                     } else {
-                        posts[postIndex].votes = Math.max((posts[postIndex].votes || 0) - 1, 0);
+                        showNotification(`Ошибка создания поста: ${error.message}`, false);
+                    }
+                }
+            }
+            
+            // Функция голосования за пост
+            async function votePost(postId, isUpvote) {
+                try {
+                    const post = allPosts.find(p => p.id === postId);
+                    if (!post || post.local) return;
+                    
+                    let newVotes = post.votes || 0;
+                    if (isUpvote) {
+                        newVotes += 1;
+                    } else {
+                        newVotes = Math.max(newVotes - 1, 0);
                     }
                     
-                    localStorage.setItem('localotvet_posts', JSON.stringify(posts));
-                    loadPosts();
+                    await supabaseManager.updateVotes(postId, newVotes);
+                    await loadPosts();
                     showNotification('Голос учтен', true);
+                } catch (error) {
+                    console.error('Ошибка голосования:', error);
+                    showNotification('Ошибка голосования', false);
                 }
             }
             
             // Функция добавления комментария
-            function addComment(postId, text) {
-                const posts = getPostsFromStorage();
-                const postIndex = posts.findIndex(p => p.id === postId);
-                
-                if (postIndex !== -1) {
-                    if (!posts[postIndex].comments) {
-                        posts[postIndex].comments = [];
-                    }
-                    
-                    const newComment = {
-                        text: text,
-                        author: currentUsername,
-                        authorId: userId,
-                        timestamp: new Date().toISOString()
-                    };
-                    
-                    posts[postIndex].comments.push(newComment);
-                    localStorage.setItem('localotvet_posts', JSON.stringify(posts));
-                    loadPosts();
+            async function addComment(postId, text) {
+                try {
+                    await supabaseManager.addComment(postId, text, userManager.username, userManager.userId);
+                    await loadPosts();
                     showNotification('Комментарий добавлен', true);
                     
                     const commentsSection = document.getElementById(`comments-${postId}`);
                     if (commentsSection) {
                         commentsSection.style.display = 'block';
                     }
+                } catch (error) {
+                    console.error('Ошибка добавления комментария:', error);
+                    showNotification(`Ошибка добавления комментария: ${error.message}`, false);
                 }
             }
             
             // Функция удаления поста
-            function deletePost(postId) {
-                const posts = getPostsFromStorage();
-                const updatedPosts = posts.filter(p => p.id !== postId);
-                localStorage.setItem('localotvet_posts', JSON.stringify(updatedPosts));
-                loadPosts();
-                showNotification('Пост удален', true);
+            async function deletePost(postId, isLocal) {
+                try {
+                    showSyncStatus('Удаление поста...', true);
+                    
+                    if (isLocal) {
+                        // Удаляем локальный пост
+                        supabaseManager.localPosts = supabaseManager.localPosts.filter(post => post.id !== postId);
+                        localStorage.setItem('localotvet_local_posts', JSON.stringify(supabaseManager.localPosts));
+                    } else {
+                        // Удаляем пост из Supabase
+                        await supabaseManager.deletePost(postId);
+                    }
+                    
+                    await loadPosts();
+                    showNotification('Пост успешно удален', true);
+                } catch (error) {
+                    console.error('Ошибка удаления поста:', error);
+                    showNotification('Ошибка удаления поста', false);
+                }
             }
             
             // Функция показа уведомлений
             function showNotification(message, isSuccess) {
-                // Создаем элемент уведомления
                 const notification = document.createElement('div');
                 notification.textContent = message;
                 notification.style.cssText = `
@@ -1402,10 +2097,32 @@
                 
                 document.body.appendChild(notification);
                 
-                // Удаляем уведомление через 3 секунды
                 setTimeout(() => {
                     notification.remove();
                 }, 3000);
+            }
+            
+            // Функция отображения статуса
+            function showSyncStatus(message, isSuccess) {
+                const syncStatus = document.getElementById('syncStatus');
+                if (syncStatus) {
+                    syncStatus.textContent = message;
+                    syncStatus.style.cssText = `
+                        padding: 8px 12px;
+                        border-radius: var(--radius);
+                        font-size: 13px;
+                        text-align: center;
+                        margin-bottom: 12px;
+                        background: ${isSuccess ? '#dcfce7' : '#fecaca'};
+                        color: ${isSuccess ? '#166534' : '#991b1b'};
+                        border: 1px solid ${isSuccess ? '#bbf7d0' : '#fca5a5'};
+                    `;
+                    
+                    setTimeout(() => {
+                        syncStatus.textContent = '';
+                        syncStatus.style.cssText = '';
+                    }, 5000);
+                }
             }
         });
     </script>
