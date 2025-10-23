@@ -7,6 +7,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        /* Стили остаются без изменений */
         :root {
             --primary-color: #2563eb;
             --primary-hover: #1d4ed8;
@@ -1022,7 +1023,7 @@
                         <h3>Работа с данными</h3>
                         <div class="data-tools-buttons">
                             <button class="import-export-btn" id="exportDataBtn">Экспорт данных</button>
-                            <button class="import-export-btn" id="importDataBtn">Импорт данных</button>
+                            <!-- Убрана кнопка импорта данных -->
                             <button class="import-export-btn" id="becomeOwnerBtn">Режим владельца</button>
                         </div>
                     </div>
@@ -1066,6 +1067,8 @@
                                 <div class="post-text">
                                     <p>LocalOtvet - это современная платформа для вопросов и ответов, созданная для русскоязычного сообщества.</p>
                                     <p style="margin-top: 12px;">Мы стремимся создать удобное и безопасное пространство для обмена знаниями и опытом.</p>
+                                    <p style="margin-top: 12px; font-weight: 600;">Версия 2.0: Защита данных</p>
+                                    <p style="margin-top: 8px;">Функция импорта данных удалена для защиты базы данных от несанкционированного доступа.</p>
                                 </div>
                             </div>
                         </div>
@@ -1150,22 +1153,7 @@
         </div>
     </div>
 
-    <div class="modal" id="importDataModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Импорт данных</h2>
-                <button class="close-modal">&times;</button>
-            </div>
-            <div class="form-group">
-                <label for="importData">Вставьте данные для импорта (JSON):</label>
-                <textarea id="importData" class="form-control" rows="5"></textarea>
-            </div>
-            <div class="modal-actions">
-                <button type="button" class="btn btn-secondary close-modal">Отмена</button>
-                <button class="btn btn-primary" id="confirmImportBtn">Импортировать</button>
-            </div>
-        </div>
-    </div>
+    <!-- Убрано модальное окно для импорта данных -->
 
     <script>
         // Конфигурация Supabase
@@ -1544,9 +1532,7 @@
             const logoutOwnerBtn = document.getElementById('logoutOwnerBtn');
             const nukeDataBtn = document.getElementById('nukeDataBtn');
             const exportDataBtn = document.getElementById('exportDataBtn');
-            const importDataBtn = document.getElementById('importDataBtn');
-            const importDataModal = document.getElementById('importDataModal');
-            const confirmImportBtn = document.getElementById('confirmImportBtn');
+            // Убрана кнопка импорта данных
             
             // Создаем экземпляры классов
             const supabaseManager = new SupabaseManager();
@@ -1860,27 +1846,7 @@
                     showNotification('Данные экспортированы', true);
                 });
 
-                importDataBtn.addEventListener('click', () => {
-                    importDataModal.style.display = 'flex';
-                });
-
-                confirmImportBtn.addEventListener('click', () => {
-                    const importDataText = document.getElementById('importData').value;
-                    
-                    if (!importDataText) {
-                        showNotification('Введите данные для импорта', false);
-                        return;
-                    }
-
-                    try {
-                        const importedData = JSON.parse(importDataText);
-                        showNotification('Данные импортированы (функция в разработке)', true);
-                        importDataModal.style.display = 'none';
-                        document.getElementById('importData').value = '';
-                    } catch (e) {
-                        showNotification('Ошибка при разборе JSON: ' + e.message, false);
-                    }
-                });
+                // Убрана функциональность импорта данных
             }
             
             // Закрытие всех модальных окон
