@@ -7,7 +7,6 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        /* Стили остаются без изменений */
         :root {
             --primary-color: #2563eb;
             --primary-hover: #1d4ed8;
@@ -1069,7 +1068,7 @@
                                     <ul style="margin-top: 8px; padding-left: 20px;">
                                         <li>Улучшенная система защиты от флуда и ботов</li>
                                         <li>Расширенный черный список с защитой от обхода</li>
-                                        <li>Защищенный режим владельца с хешированием пароля</li>
+                                        <li>Защищенный режим владельца с паролем в Supabase</li>
                                         <li>Валидация и санитизация всех входных данных</li>
                                         <li>Защита от прямых запросов к базе данных</li>
                                     </ul>
@@ -1246,33 +1245,40 @@
             }
         }
 
-        // Защищенный менеджер владельца
+        // Защищенный менеджер владельца с паролем из Supabase
         class OwnerManager {
-            constructor() {
-                this.ownerHash = null;
+            constructor(supabaseClient) {
+                this.supabase = supabaseClient;
                 this.ownerSession = null;
                 this.sessionTimeout = 60 * 60 * 1000; // 1 час
             }
 
-            async hashPassword(password) {
-                const encoder = new TextEncoder();
-                const data = encoder.encode(password + 'localotvet_salt_2024_security_fix');
-                const hash = await crypto.subtle.digest('SHA-256', data);
-                return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
-            }
-
             async verifyOwner(password) {
-                const hashed = await this.hashPassword(password);
-                // Хеш правильного пароля (замените на реальный хеш вашего пароля)
-                const validHash = '8c1d4a9f7b2e6c3a5d8f1e4b7c2a9d6e5f8a1b4c7e2d9f6a8b5c3e1d4f7a9b2c6e8f1a3d5b7c9e2a4';
-                
-                if (hashed === validHash) {
-                    this.ownerSession = this.generateSessionToken();
-                    sessionStorage.setItem('owner_session', this.ownerSession);
-                    sessionStorage.setItem('owner_session_time', Date.now().toString());
-                    return true;
+                try {
+                    // Получаем правильный пароль из Supabase
+                    const { data, error } = await this.supabase
+                        .from('site_config')
+                        .select('config_value')
+                        .eq('config_key', 'owner_password')
+                        .single();
+
+                    if (error) {
+                        console.error('Ошибка получения пароля:', error);
+                        return false;
+                    }
+
+                    // Сравниваем пароли
+                    if (password === data.config_value) {
+                        this.ownerSession = this.generateSessionToken();
+                        sessionStorage.setItem('owner_session', this.ownerSession);
+                        sessionStorage.setItem('owner_session_time', Date.now().toString());
+                        return true;
+                    }
+                    return false;
+                } catch (error) {
+                    console.error('Ошибка проверки пароля:', error);
+                    return false;
                 }
-                return false;
             }
 
             isOwner() {
@@ -1291,7 +1297,7 @@
             }
 
             generateSessionToken() {
-                return 'secure_session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 16) + '_' + crypto.getRandomValues(new Uint32Array(4)).join('');
+                return 'secure_session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 16);
             }
 
             logoutOwner() {
@@ -1664,11 +1670,11 @@
 
         document.addEventListener('DOMContentLoaded', function() {
             // Создаем экземпляры классов в правильном порядке
-            const floodProtection = new FloodProtection();
-            const ownerManager = new OwnerManager();
             const supabaseManager = new SupabaseManager();
+            const ownerManager = new OwnerManager(supabaseManager.supabase);
             const userManager = new UserManager(ownerManager);
             const communityManager = new CommunityManager();
+            const floodProtection = new FloodProtection();
 
             // Элементы DOM
             const postsContainer = document.getElementById('postsContainer');
