@@ -1529,7 +1529,7 @@
 
         // Класс для управления пользователем
         class UserManager {
-            constructor() {
+            constructor(ownerManager) {
                 this.userId = localStorage.getItem('localotvet_userId');
                 if (!this.userId) {
                     this.userId = 'user_' + Date.now().toString() + '_' + Math.random().toString(36).substr(2, 9);
@@ -1537,7 +1537,8 @@
                 }
                 
                 this.username = localStorage.getItem('localotvet_username') || 'Аноним';
-                this.isOwner = ownerManager.isOwner();
+                this.ownerManager = ownerManager;
+                this.isOwner = this.ownerManager.isOwner();
                 this.subscriptions = JSON.parse(localStorage.getItem('localotvet_subscriptions') || '[]');
             }
 
@@ -1556,11 +1557,11 @@
             }
 
             async becomeOwner(password) {
-                return await ownerManager.verifyOwner(password);
+                return await this.ownerManager.verifyOwner(password);
             }
 
             logoutOwner() {
-                ownerManager.logoutOwner();
+                this.ownerManager.logoutOwner();
                 this.isOwner = false;
             }
 
@@ -1662,6 +1663,13 @@
         }
 
         document.addEventListener('DOMContentLoaded', function() {
+            // Создаем экземпляры классов в правильном порядке
+            const floodProtection = new FloodProtection();
+            const ownerManager = new OwnerManager();
+            const supabaseManager = new SupabaseManager();
+            const userManager = new UserManager(ownerManager);
+            const communityManager = new CommunityManager();
+
             // Элементы DOM
             const postsContainer = document.getElementById('postsContainer');
             const popularPostsContainer = document.getElementById('popularPostsContainer');
@@ -1696,13 +1704,6 @@
             const nukeDataBtn = document.getElementById('nukeDataBtn');
             const exportDataBtn = document.getElementById('exportDataBtn');
             
-            // Создаем экземпляры классов
-            const supabaseManager = new SupabaseManager();
-            const userManager = new UserManager();
-            const communityManager = new CommunityManager();
-            const floodProtection = new FloodProtection();
-            const ownerManager = new OwnerManager();
-
             // Текущее состояние
             let allPosts = [];
             let currentCategory = 'all';
@@ -1845,12 +1846,10 @@
             function setupCategories() {
                 categoryItems.forEach(item => {
                     item.addEventListener('click', function() {
-                        if (this.getAttribute('data-category') === 'all') {
-                            categoryItems.forEach(cat => cat.classList.remove('active'));
-                            this.classList.add('active');
-                            currentCategory = 'all';
-                            filterPostsByCategory();
-                        }
+                        categoryItems.forEach(cat => cat.classList.remove('active'));
+                        this.classList.add('active');
+                        currentCategory = this.getAttribute('data-category');
+                        filterPostsByCategory();
                     });
                 });
             }
@@ -1995,6 +1994,7 @@
                     if (await userManager.becomeOwner(password)) {
                         ownerModal.style.display = 'none';
                         ownerPassword.value = '';
+                        userManager.isOwner = true;
                         updateUserDisplay();
                         showNotification('Режим владельца активирован!', true);
                     } else {
@@ -2004,6 +2004,7 @@
 
                 logoutOwnerBtn.addEventListener('click', () => {
                     userManager.logoutOwner();
+                    userManager.isOwner = false;
                     updateUserDisplay();
                     showNotification('Режим владельца деактивирован', true);
                 });
