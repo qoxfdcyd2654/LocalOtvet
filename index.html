@@ -18,7 +18,6 @@
             --danger-color: #dc2626;
             --success-color: #16a34a;
             --warning-color: #d97706;
-            --owner-color: #f59e0b;
             --banned-color: #6b7280;
             --local-color: #10b981;
             --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
@@ -242,16 +241,6 @@
             font-family: 'Monaco', 'Consolas', monospace;
         }
 
-        .owner-badge {
-            background-color: var(--owner-color);
-            color: #000;
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: 600;
-            margin-left: 6px;
-        }
-        
         .categories {
             margin-top: 24px;
         }
@@ -510,7 +499,7 @@
         }
 
         .delete-post-btn.owner-delete {
-            background-color: var(--owner-color);
+            background-color: var(--warning-color);
             color: #000;
             padding: 6px 12px;
             border-radius: var(--radius);
@@ -771,40 +760,6 @@
             transform: none;
         }
         
-        .owner-tools {
-            margin-top: 20px;
-            padding: 16px;
-            background-color: #fffbeb;
-            border-radius: var(--radius);
-            border: 1px solid #fef3c7;
-        }
-        
-        .owner-tools h3 {
-            color: #d97706;
-            margin-bottom: 12px;
-            font-size: 16px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .owner-btn {
-            background-color: var(--owner-color);
-            color: #000;
-            border: none;
-            padding: 8px 12px;
-            border-radius: var(--radius);
-            cursor: pointer;
-            font-weight: 600;
-            width: 100%;
-            margin-bottom: 8px;
-            font-size: 13px;
-        }
-        
-        .owner-btn:hover {
-            background-color: #eab308;
-        }
-        
         .data-tools {
             margin-top: 20px;
             padding: 16px;
@@ -973,15 +928,6 @@
                     
                     <div class="sync-status" id="syncStatus"></div>
                     
-                    <div class="owner-tools" id="ownerTools" style="display: none;">
-                        <h3>👑 Инструменты владельца</h3>
-                        <button class="owner-btn" id="nukeDataBtn">Очистить все посты</button>
-                        <button class="owner-btn" id="viewBannedUsersBtn">Просмотр забаненных</button>
-                        <button class="owner-btn" id="viewLocalPostsBtn">Просмотр локальных постов</button>
-                        <button class="owner-btn" id="viewSmartBansBtn">Умные баны</button>
-                        <button class="owner-btn" id="logoutOwnerBtn">Выйти из режима владельца</button>
-                    </div>
-                    
                     <div class="categories">
                         <h3>Категории</h3>
                         <ul class="category-list" id="categoryList">
@@ -1022,7 +968,6 @@
                         <h3>Работа с данными</h3>
                         <div class="data-tools-buttons">
                             <button class="import-export-btn" id="exportDataBtn">Экспорт данных</button>
-                            <button class="import-export-btn" id="becomeOwnerBtn">Режим владельца</button>
                         </div>
                     </div>
                 </div>
@@ -1068,7 +1013,6 @@
                                     <ul style="margin-top: 8px; padding-left: 20px;">
                                         <li>Улучшенная система защиты от флуда и ботов</li>
                                         <li>Расширенный черный список с защитой от обхода</li>
-                                        <li>Защищенный режим владельца с паролем в Supabase</li>
                                         <li>Валидация и санитизация всех входных данных</li>
                                         <li>Защита от прямых запросов к базе данных</li>
                                         <li>Улучшенная система подписок</li>
@@ -1134,26 +1078,6 @@
             <div class="modal-actions">
                 <button type="button" class="btn btn-secondary close-modal">Отмена</button>
                 <button class="btn btn-primary" id="saveUsernameBtn">Сохранить</button>
-            </div>
-        </div>
-    </div>
-
-    <div class="modal" id="ownerModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Режим владельца</h2>
-                <button class="close-modal">&times;</button>
-            </div>
-            <div class="form-group">
-                <label for="ownerPassword">Введите пароль владельца:</label>
-                <input type="password" id="ownerPassword" class="form-control" placeholder="Пароль">
-                <small style="color: var(--gray-color); margin-top: 5px; display: block;">
-                    Только владелец сайта имеет доступ к этому режиму.
-                </small>
-            </div>
-            <div class="modal-actions">
-                <button type="button" class="btn btn-secondary close-modal">Отмена</button>
-                <button class="btn btn-primary" id="verifyOwnerBtn">Подтвердить</button>
             </div>
         </div>
     </div>
@@ -1290,7 +1214,7 @@
 
         // Класс для генерации безопасного HTML
         class HtmlGenerator {
-            static generatePostHtml(post, isAuthor, isOwner) {
+            static generatePostHtml(post, isAuthor) {
                 const categoryName = this.getCategoryName(post.category);
                 const safeTitle = InputValidator.escapeHtml(post.title);
                 const safeContent = InputValidator.escapeHtml(post.content);
@@ -1323,11 +1247,11 @@
                                 </button>
                 `;
                 
-                if (isAuthor || isOwner) {
+                if (isAuthor) {
                     html += `
-                        <button class="delete-post-btn ${isOwner && !isAuthor ? 'owner-delete' : ''}" 
+                        <button class="delete-post-btn" 
                                 data-post-id="${post.id}" data-local="${post.local}">
-                            🗑️ ${isOwner && !isAuthor ? 'Удалить (владелец)' : 'Удалить'}
+                            🗑️ Удалить
                         </button>
                     `;
                 }
@@ -1383,65 +1307,6 @@
                     'other': 'Другое'
                 };
                 return names[category] || category;
-            }
-        }
-
-        // Защищенный менеджер владельца
-        class OwnerManager {
-            constructor(supabaseClient) {
-                this.supabase = supabaseClient;
-                this.ownerSession = null;
-                this.sessionTimeout = 60 * 60 * 1000;
-            }
-
-            async verifyOwner(password) {
-                try {
-                    const { data, error } = await this.supabase
-                        .from('site_config')
-                        .select('config_value')
-                        .eq('config_key', 'owner_password')
-                        .single();
-
-                    if (error) {
-                        console.error('Ошибка получения пароля:', error);
-                        return false;
-                    }
-
-                    if (password === data.config_value) {
-                        this.ownerSession = this.generateSessionToken();
-                        sessionStorage.setItem('owner_session', this.ownerSession);
-                        sessionStorage.setItem('owner_session_time', Date.now().toString());
-                        return true;
-                    }
-                    return false;
-                } catch (error) {
-                    console.error('Ошибка проверки пароля:', error);
-                    return false;
-                }
-            }
-
-            isOwner() {
-                const session = sessionStorage.getItem('owner_session');
-                const sessionTime = sessionStorage.getItem('owner_session_time');
-                
-                if (!session || !sessionTime) return false;
-                
-                if (Date.now() - parseInt(sessionTime) > this.sessionTimeout) {
-                    this.logoutOwner();
-                    return false;
-                }
-                
-                return session === this.ownerSession;
-            }
-
-            generateSessionToken() {
-                return 'secure_session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 16);
-            }
-
-            logoutOwner() {
-                sessionStorage.removeItem('owner_session');
-                sessionStorage.removeItem('owner_session_time');
-                this.ownerSession = null;
             }
         }
 
@@ -1591,21 +1456,6 @@
                 }
             }
 
-            async nukeAllPosts() {
-                try {
-                    const { error } = await this.supabase
-                        .from('posts')
-                        .delete()
-                        .neq('id', 0);
-
-                    if (error) throw error;
-                    return true;
-                } catch (error) {
-                    console.error('Ошибка очистки постов:', error);
-                    throw error;
-                }
-            }
-
             containsBlacklistedWords(text) {
                 if (!text) return false;
                 
@@ -1668,7 +1518,7 @@
 
         // Класс для управления пользователем
         class UserManager {
-            constructor(ownerManager) {
+            constructor() {
                 this.userId = localStorage.getItem('localotvet_userId');
                 if (!this.userId) {
                     this.userId = 'user_' + Date.now().toString() + '_' + Math.random().toString(36).substr(2, 9);
@@ -1676,8 +1526,6 @@
                 }
                 
                 this.username = localStorage.getItem('localotvet_username') || 'Аноним';
-                this.ownerManager = ownerManager;
-                this.isOwner = this.ownerManager.isOwner();
                 this.subscriptions = JSON.parse(localStorage.getItem('localotvet_subscriptions') || '[]');
             }
 
@@ -1693,15 +1541,6 @@
                     this.username = 'Аноним';
                 }
                 localStorage.setItem('localotvet_username', this.username);
-            }
-
-            async becomeOwner(password) {
-                return await this.ownerManager.verifyOwner(password);
-            }
-
-            logoutOwner() {
-                this.ownerManager.logoutOwner();
-                this.isOwner = false;
             }
 
             subscribeToCategory(category) {
@@ -1805,8 +1644,7 @@
         class LocalOtvetApp {
             constructor() {
                 this.supabaseManager = new SupabaseManager();
-                this.ownerManager = new OwnerManager(this.supabaseManager.supabase);
-                this.userManager = new UserManager(this.ownerManager);
+                this.userManager = new UserManager();
                 this.communityManager = new CommunityManager();
                 this.floodProtection = new FloodProtection();
                 
@@ -1835,9 +1673,6 @@
                 this.usernameModal = document.getElementById('usernameModal');
                 this.usernameInput = document.getElementById('usernameInput');
                 this.saveUsernameBtn = document.getElementById('saveUsernameBtn');
-                this.ownerModal = document.getElementById('ownerModal');
-                this.ownerPassword = document.getElementById('ownerPassword');
-                this.verifyOwnerBtn = document.getElementById('verifyOwnerBtn');
                 
                 // Навигация
                 this.navLinks = document.querySelectorAll('.nav-link');
@@ -1853,11 +1688,7 @@
                 this.subscriptionsSection = document.getElementById('subscriptionsSection');
                 this.subscriptionsList = document.getElementById('subscriptionsList');
                 
-                // Инструменты владельца
-                this.becomeOwnerBtn = document.getElementById('becomeOwnerBtn');
-                this.ownerTools = document.getElementById('ownerTools');
-                this.logoutOwnerBtn = document.getElementById('logoutOwnerBtn');
-                this.nukeDataBtn = document.getElementById('nukeDataBtn');
+                // Инструменты
                 this.exportDataBtn = document.getElementById('exportDataBtn');
             }
 
@@ -1907,51 +1738,6 @@
                         this.showNotification('Никнейм изменен', true);
                     } catch (error) {
                         this.showNotification(error.message, false);
-                    }
-                });
-
-                // Режим владельца
-                this.becomeOwnerBtn.addEventListener('click', () => {
-                    this.ownerModal.style.display = 'flex';
-                });
-
-                this.verifyOwnerBtn.addEventListener('click', async () => {
-                    const password = this.ownerPassword.value;
-                    
-                    if (!password) {
-                        this.showNotification('Введите пароль', false);
-                        return;
-                    }
-
-                    if (await this.userManager.becomeOwner(password)) {
-                        this.ownerModal.style.display = 'none';
-                        this.ownerPassword.value = '';
-                        this.userManager.isOwner = true;
-                        this.updateUserDisplay();
-                        this.showNotification('Режим владельца активирован!', true);
-                    } else {
-                        this.showNotification('Неверный пароль', false);
-                    }
-                });
-
-                this.logoutOwnerBtn.addEventListener('click', () => {
-                    this.userManager.logoutOwner();
-                    this.userManager.isOwner = false;
-                    this.updateUserDisplay();
-                    this.showNotification('Режим владельца деактивирован', true);
-                });
-
-                // Очистка данных
-                this.nukeDataBtn.addEventListener('click', async () => {
-                    if (confirm('⚠️ ВЫ УВЕРЕНЫ, ЧТО ХОТИТЕ УДАЛИТЬ ВСЕ ПОСТЫ?\n\nЭто действие нельзя отменить!')) {
-                        try {
-                            await this.supabaseManager.nukeAllPosts();
-                            this.showNotification('Все посты удалены!', true);
-                            await this.loadPosts();
-                        } catch (error) {
-                            console.error('Ошибка очистки:', error);
-                            this.showNotification('Ошибка удаления постов', false);
-                        }
                     }
                 });
 
@@ -2062,34 +1848,20 @@
                 
                 if (usernameDisplay) {
                     const safeUsername = InputValidator.escapeHtml(this.userManager.username);
-                    if (this.userManager.isOwner) {
-                        usernameDisplay.innerHTML = safeUsername + '<span class="owner-badge">👑 ВЛАДЕЛЕЦ</span>';
-                    } else {
-                        usernameDisplay.textContent = safeUsername;
-                    }
+                    usernameDisplay.textContent = safeUsername;
                 }
                 
                 if (userAvatar) {
                     const initial = this.userManager.username === 'Аноним' ? 'A' : 
                                    this.userManager.username.charAt(0).toUpperCase();
                     userAvatar.textContent = initial;
-                    
-                    if (this.userManager.isOwner) {
-                        userAvatar.style.backgroundColor = 'var(--owner-color)';
-                        userAvatar.style.color = '#000';
-                    } else {
-                        userAvatar.style.backgroundColor = 'var(--primary-color)';
-                        userAvatar.style.color = 'white';
-                    }
+                    userAvatar.style.backgroundColor = 'var(--primary-color)';
+                    userAvatar.style.color = 'white';
                 }
                 
                 if (userIdDisplay) {
                     const shortId = this.userManager.userId.substring(0, 8) + '...';
                     userIdDisplay.textContent = `ID: ${shortId}`;
-                }
-
-                if (this.ownerTools) {
-                    this.ownerTools.style.display = this.userManager.isOwner ? 'block' : 'none';
                 }
             }
 
@@ -2259,7 +2031,7 @@
                 
                 posts.forEach((post) => {
                     const isAuthor = post.authorId === this.userManager.userId;
-                    const html = HtmlGenerator.generatePostHtml(post, isAuthor, this.userManager.isOwner);
+                    const html = HtmlGenerator.generatePostHtml(post, isAuthor);
                     container.innerHTML += html;
                 });
                 
